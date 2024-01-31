@@ -13,6 +13,7 @@ from .model import (
     HomeeSettings,
 )
 import re
+import os
 import logging
 
 _LOGGER = logging.getLogger(__name__)
@@ -469,6 +470,17 @@ class Homee:
         """Called once the websocket connection has been established."""
         If self.retries > 0:
             _LOGGER.warning("Homee %s Reconnected after %s retries", self.device, self.retries)
+
+        # mock code
+        path = "./config/pymee/mock"
+        _LOGGER.info("Mocking devices")
+        if os.path.exists(path):
+            directory = os.listdir(path)
+            if len(directory) > 0:
+                for file in directory:
+                    with open(f"{path}/{file}") as f:
+                        message = f.read()
+                    await self._handle_message(json.loads(message))
 
     async def on_disconnected(self):
         """Called after the websocket connection has been closed."""
