@@ -486,13 +486,20 @@ class Homee:
 
         # mock code
         path = "./config/pymee/mock"
+        loop = asyncio.get_running_loop()
         _LOGGER.info("Mocking devices")
+
         if os.path.exists(path):
-            directory = os.listdir(path)
+            def blocking_listdir(path):
+                return os.listdir(path)
+            directory = await loop.run_in_executor(None, blocking_listdir, path)
             if len(directory) > 0:
+
                 for file in directory:
-                    with open(f"{path}/{file}") as f:
-                        message = f.read()
+                    def blocking_file_read(path, file):
+                        with open(f"{path}/{file}") as f:
+                            return f.read()
+                    message = await loop.run_in_executor(None, blocking_file_read, path, file)
                     await self._handle_message(json.loads(message))
 
     async def on_disconnected(self, error=None):
