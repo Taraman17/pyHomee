@@ -9,6 +9,7 @@
 pyHomee is an unofficial python library for interacting with the [homee](https://hom.ee) smart home/home automation platform. It uses the [websockets](https://github.com/aaugustin/websockets) library to connect to a local homee cube and maintains a list of nodes (devices), attributes, groups, users and more that are updated whenever new data arrives from homee.
 
 Large parts of this library are directly ported from the awesome [homeeApi](https://github.com/stfnhmplr/homee-api) javascript library.
+
 This library was initially developed as "pymee" by [FreshlyBrewedCode](https://github.com/FreshlyBrewedCode/pymee).
 
 ## Installation
