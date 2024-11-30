@@ -6,13 +6,13 @@ with open("README.md", "r") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pymee",
+    name="pyHomee",
     version=__version__,
-    author="FreshlyBrewedCode",
+    author="Taraman17",
     description="a python library to interact with homee",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/FreshlyBrewedCode/pymee",
+    url="https://github.com/Taraman17/pyHomee",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
