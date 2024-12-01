@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 import logging
-import regex
+import re
 from urllib.parse import unquote
 from .const import NodeProtocol, WarningCode
 
@@ -547,7 +547,7 @@ class HomeeSettings:
     @property
     def mac_address(self) -> str:
         """Return MAC Address derived from HomeeID"""
-        return ':'.join(regex.findall('..', self._data["uid"]))
+        return ":".join(re.findall("..", self._data["uid"]))
 
     @property
     def internet_access(self) -> bool:

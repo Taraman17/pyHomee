@@ -1,7 +1,7 @@
-# pyhomee
+# pyHomee
 
-![PyPI](https://img.shields.io/pypi/v/pyhomee?style=for-the-badge)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyhomee?color=blue&logo=python&logoColor=yellow&style=for-the-badge)
+![PyPI](https://img.shields.io/pypi/v/pyHomee?style=for-the-badge)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyHomee?color=blue&logo=python&logoColor=yellow&style=for-the-badge)
 ![GitHub last commit](https://img.shields.io/github/last-commit/Taraman17/pyHomee?style=for-the-badge)
 
 > pyHomee is the backbone of the [Home Assistant homee integration](https://github.com/Taraman17/hass-homee).
@@ -14,10 +14,10 @@ This library was initially developed as "pymee" by [FreshlyBrewedCode](https://g
 
 ## Installation
 
-Install from [PyPI](https://pypi.org/project/pyhomee/):
+Install from [PyPI](https://pypi.org/project/pyHomee/):
 
 ```
-pip install pyhomee
+pip install pyHomee
 ```
 
 ## Usage
@@ -27,7 +27,7 @@ pip install pyhomee
 pyHomee should be used with `asyncio`:
 
 ```python
-from pyhomee import Homee
+from pyHomee import Homee
 import asyncio
 import logging
 
@@ -58,7 +58,7 @@ asyncio.run(main())
 ### Access devices and attributes
 
 Devices are represented as "nodes" in the api. All nodes are available in the list `Homee.nodes` and are represented by the `HomeeNode` class.
-Each node has a list of attributes accessible from `HomeeNode.attributes`. The attributes on a node represent the different attributes on a device, i.e. if a light is turned on or the target temperature of a thermostat. Attributes can be identified by the `HomeeAttribute.type` property. You can compare the type with the values from `pyhomee.const.AttributeType` to figure out what each attribute represents. The value can be accessed with the `HomeeAttribute.current_value` property.
+Each node has a list of attributes accessible from `HomeeNode.attributes`. The attributes on a node represent the different attributes on a device, i.e. if a light is turned on or the target temperature of a thermostat. Attributes can be identified by the `HomeeAttribute.type` property. You can compare the type with the values from `pyHomee.const.AttributeType` to figure out what each attribute represents. The value can be accessed with the `HomeeAttribute.current_value` property.
 
 If you need to change the value of an attribute you can use `Homee.set_value()`:
 
@@ -131,8 +131,8 @@ homee.update_attribute(self, nodeId: int, attributeId: int)
 Example implementation that dumps all info into a json file and logs whenever a light is turned on or off:
 
 ```python
-from pyhomee.const import NodeProfile, AttributeType
-from pyhomee.model import HomeeAttribute
+from pyHomee.const import NodeProfile, AttributeType
+from pyHomee.model import HomeeAttribute
 
 class JsonHomee(Homee):
     async def on_message(self, msg: dict):
