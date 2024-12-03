@@ -980,7 +980,7 @@ class HomeeUser:
     @property
     def devices(self) -> list[HomeeDevice]:
         """Return the list of devices associated with the user."""
-        return self._devices
+        return self._data["devices"]
 
     def set_data(self, data: str) -> None:
         """Update data of the user"""
