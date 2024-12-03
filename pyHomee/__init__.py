@@ -97,21 +97,25 @@ class Homee:
             )
         except aiohttp.client_exceptions.ClientError as e:
             await client.close()
-            raise AuthenticationFailedException from e
+            raise HomeeAuthFailedException("Could not connect to Homee") from e
 
         try:
             req_text = await req.text()
-            regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
-            matches = re.match(regex, req_text)
+            if req.status == 200:
+                regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
+                matches = re.match(regex, req_text)
 
-            self.token = matches[1]
-            self.expires = datetime.now().timestamp() + int(matches[2])
+                self.token = matches[1]
+                self.expires = datetime.now().timestamp() + int(matches[2])
 
-            self.retries = 0
+                self.retries = 0
+            else:
+                await client.close()
+                raise HomeeAuthFailedException(f"Did not get a valid token: {req.reason}")
 
         except aiohttp.client_exceptions.ClientError as e:
             await client.close()
-            raise AuthenticationFailedException from e
+            raise HomeeAuthFailedException(f"Client error: {e.__cause__}") from e
 
         await client.close()
         return self.token
@@ -143,7 +147,7 @@ class Homee:
 
             try:
                 await self.get_access_token()
-            except AuthenticationFailedException:
+            except HomeeAuthFailedException("Could not get access token."):
                 # Reconnect
                 self.retries += 1
                 continue
@@ -575,6 +579,10 @@ class Homee:
 class HomeeException(Exception):
     """Base class for all errors thrown by this library."""
 
+class HomeeConnectionFailedException(HomeeException):
+    """Raised if connection can not be established."""
 
-class AuthenticationFailedException(HomeeException):
+class HomeeAuthFailedException(HomeeException):
     """Raised if no valid access token could be acquired."""
+    def __init__(self, reason):
+        self.reason = reason
