@@ -2,6 +2,19 @@
 
 
 
+## v1.0.3 (2024-12-21)
+
+### Fix
+
+* fix: add asyncio.Timeout error ([`d9014f2`](https://github.com/Taraman17/pyHomee/commit/d9014f2fee9099a22362cabbb022ccde7ad5c0bc))
+
+### Unknown
+
+* Merge pull request #17 from Taraman17/dev
+
+fix: add asyncio.Timeout error ([`7d1d44b`](https://github.com/Taraman17/pyHomee/commit/7d1d44b70857e9754c836e05eb4cf5bf55a9ee61))
+
+
 ## v1.0.2 (2024-12-03)
 
 ### Fix
