@@ -191,6 +191,14 @@ class HomeeAttribute:
         """Update data of the attribute."""
         self._data = data
 
+    def get_value(self) -> float | str:
+        """Get the current value or data of the attribute."""
+        # If the unit of the attribute is 'text', it is stored in .data
+        if self.unit == "text":
+            return self.data
+
+        return self.current_value
+
 
 class HomeeNode:
     """Representation of a node in Homee."""
