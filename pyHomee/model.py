@@ -314,16 +314,34 @@ class HomeeNode:
         self._data = data
 
     def get_attribute_index(self, attribute_id: int) -> int:
-        """Find and return attribute for a given index."""
+        """Find and return attribute for a given index.
+
+        Returns -1 if not found."""
         return next(
-            (i for i, a in enumerate(self.attributes) if a.id == attribute_id), -1
+            (
+                i for i,
+                a in enumerate(self.attributes) if a.id == attribute_id
+            ),
+            -1
         )
 
-    def get_attribute_by_type(self, attribute_type: int) -> HomeeAttribute:
-        """Find and return attribute by attributeType."""
-        return self._attribute_map[attribute_type]
+    def get_attribute_by_type(
+        self, attribute_type: int, instance: int = 0
+    ) -> HomeeAttribute | None:
+        """Find and return attribute by attributeType.
 
-    def get_attribute_by_id(self, attribute_id: int) -> HomeeAttribute:
+        If multiple attributes of the same type are present,
+        the instance number can be used to select the correct one."""
+        return next(
+            (
+                i for i,
+                a in enumerate(self.attributes)
+                if a.type == attribute_type and a.instance == instance
+            ),
+            None
+        )
+
+    def get_attribute_by_id(self, attribute_id: int) -> HomeeAttribute | None:
         """Find and return attribute for a given id."""
         index = self.get_attribute_index(attribute_id)
         return self.attributes[index] if index != -1 else None
