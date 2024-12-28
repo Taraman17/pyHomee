@@ -381,7 +381,6 @@ class Homee:
         existing_node = self.get_node_by_id(node_data["id"])
         if existing_node is not None:
             existing_node.set_data(node_data)
-            existing_node.update_attributes(node_data["attributes"])
         else:
             self.nodes.append(HomeeNode(node_data))
             self._remap_relationships()

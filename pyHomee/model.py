@@ -1,6 +1,7 @@
 """Data model for Homees various data items."""
 
 from collections.abc import Callable
+from typing import Self
 import logging
 import re
 from urllib.parse import unquote
@@ -74,6 +75,7 @@ class HomeeAttribute:
     def __init__(self, data: dict) -> None:
         """Initialize the attribute."""
         self._data = data
+        self._on_changed_listeners = []
 
     @property
     def raw_data(self):
@@ -187,9 +189,21 @@ class HomeeAttribute:
 
         return []
 
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable:
+        """Add on_changed listener to attribute."""
+        self._on_changed_listeners.append(listener)
+
+        def remove_listener():
+            self._on_changed_listeners.remove(listener)
+
+        return remove_listener
+
     def set_data(self, data: str):
         """Update data of the attribute."""
         self._data = data
+
+        for listener in self._on_changed_listeners:
+            listener(self)
 
     def get_value(self) -> float | str:
         """Get the current value or data of the attribute."""
@@ -313,6 +327,11 @@ class HomeeNode:
         """Update data of the node."""
         self._data = data
 
+        self.update_attributes(self._data["attributes"])
+
+        for listener in self._on_changed_listeners:
+            listener(self)
+
     def get_attribute_index(self, attribute_id: int) -> int:
         """Find and return attribute for a given index.
 
@@ -346,7 +365,7 @@ class HomeeNode:
         index = self.get_attribute_index(attribute_id)
         return self.attributes[index] if index != -1 else None
 
-    def add_on_changed_listener(self, listener: Callable) -> Callable:
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable:
         """Add on_changed listener to node."""
         self._on_changed_listeners.append(listener)
 
@@ -367,8 +386,6 @@ class HomeeNode:
         attribute = self.get_attribute_by_id(attribute_data["id"])
         if attribute is not None:
             attribute.set_data(attribute_data)
-            for listener in self._on_changed_listeners:
-                listener(self, attribute)
 
     def _update_attributes(self, attributes: list[dict]):
         # TODO: Remove in a future release.
@@ -405,6 +422,7 @@ class HomeeGroup:
     def __init__(self, data) -> None:
         """Initialize a Homee group."""
         self._data = data
+        self._on_changed_listeners = []
         self.nodes: list[HomeeNode] = []
 
     @property
@@ -454,9 +472,21 @@ class HomeeGroup:
     def owner(self) -> int:
         return self._data["owner"]
 
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable:
+        """Add on_changed listener to group."""
+        self._on_changed_listeners.append(listener)
+
+        def remove_listener():
+            self._on_changed_listeners.remove(listener)
+
+        return remove_listener
+
     def set_data(self, data: str) -> None:
         """Update data of the group."""
         self._data = data
+
+        for listener in self._on_changed_listeners:
+            listener(self)
 
 
 class HomeeSettings:
@@ -465,6 +495,7 @@ class HomeeSettings:
     def __init__(self, data: dict) -> None:
         """Initialize settings."""
         self._data = data
+        self._on_changed_listeners = []
 
     @property
     def raw_data(self) -> str:
@@ -616,9 +647,21 @@ class HomeeSettings:
     def extensions(self) -> list[dict]:
         return self._data["extensions"]
 
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable:
+        """Add on_changed listener to group."""
+        self._on_changed_listeners.append(listener)
+
+        def remove_listener():
+            self._on_changed_listeners.remove(listener)
+
+        return remove_listener
+
     def set_data(self, data: str) -> None:
         """Update data of the settings object."""
         self._data = data
+
+        for listener in self._on_changed_listeners:
+            listener(self)
 
 
 class HomeeRelationship:
@@ -1011,8 +1054,3 @@ class HomeeUser:
     def set_data(self, data: str) -> None:
         """Update data of the user"""
         self._data = data
-
-
-# JSON to Python regex:
-# Match: "([^"]*)":[^,]*,
-# Replace: @property\ndef $1(self):\n\treturn self._data["$1"]\n
