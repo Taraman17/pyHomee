@@ -351,14 +351,11 @@ class HomeeNode:
 
         If multiple attributes of the same type are present,
         the instance number can be used to select the correct one."""
-        return next(
-            (
-                i for i,
-                a in enumerate(self.attributes)
-                if a.type == attribute_type and a.instance == instance
-            ),
-            None
-        )
+        for a in self.attributes:
+            if a.type == attribute_type and a.instance == instance:
+                return a
+
+        return None
 
     def get_attribute_by_id(self, attribute_id: int) -> HomeeAttribute | None:
         """Find and return attribute for a given id."""
