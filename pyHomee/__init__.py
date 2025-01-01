@@ -154,7 +154,8 @@ class Homee:
 
             try:
                 await self.get_access_token()
-            except HomeeAuthFailedException("Could not get access token."):
+            except HomeeAuthFailedException as e:
+                _LOGGER.error("Could not authenticate with Homee: %s", e)
                 # Reconnect
                 self.retries += 1
                 continue
