@@ -2,6 +2,32 @@
 
 
 
+## v1.0.3 (2024-12-21)
+
+### Fix
+
+* fix: add asyncio.Timeout error ([`d9014f2`](https://github.com/Taraman17/pyHomee/commit/d9014f2fee9099a22362cabbb022ccde7ad5c0bc))
+
+### Unknown
+
+* Merge pull request #17 from Taraman17/dev
+
+fix: add asyncio.Timeout error ([`7d1d44b`](https://github.com/Taraman17/pyHomee/commit/7d1d44b70857e9754c836e05eb4cf5bf55a9ee61))
+
+
+## v1.0.2 (2024-12-03)
+
+### Fix
+
+* fix: Unexpected exception when login information is incorrect. Taraman17/pyHomee#14 ([`473866b`](https://github.com/Taraman17/pyHomee/commit/473866b39b1e852f4f548b99677a5dc9ed0f3882))
+
+### Unknown
+
+* Merge pull request #15 from Taraman17/dev
+
+fix: Unexpected exception when login is incorrect. ([`3e60405`](https://github.com/Taraman17/pyHomee/commit/3e60405f31b2a20137107bd408f529cd445393e4))
+
+
 ## v1.0.1 (2024-12-01)
 
 ### Fix
