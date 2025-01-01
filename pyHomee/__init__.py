@@ -526,13 +526,13 @@ class Homee:
 
         return f"ws://{self.host}:7681"
 
-    def wait_until_connected(self):
+    async def wait_until_connected(self) -> Coroutine[Any, Any, Literal[True]]:
         """Return a coroutine that runs until a connection has been established."""
-        return self._connected_event.wait()
+        return await self._connected_event.wait()
 
-    def wait_until_disconnected(self):
+    async def wait_until_disconnected(self) -> Coroutine[Any, Any, Literal[True]]:
         """Return a coroutine that runs until the connection has been closed."""
-        return self._disconnected_event.wait()
+        return await self._disconnected_event.wait()
 
     async def on_reconnect(self):
         """Execute right before a reconnection attempt is started."""
