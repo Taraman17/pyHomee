@@ -187,7 +187,15 @@ class HomeeAttribute:
         if "options" in self._data:
             return HomeeAttributeOptions(self._data["options"])
 
-        return []
+        return None
+
+    @property
+    def is_reversed(self) -> bool:
+        """Check if movement direction is reversed."""
+        if self.options is not None:
+            return self.options.reverse_control_ui
+
+        return False
 
     def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable:
         """Add on_changed listener to attribute."""
@@ -337,11 +345,7 @@ class HomeeNode:
 
         Returns -1 if not found."""
         return next(
-            (
-                i for i,
-                a in enumerate(self.attributes) if a.id == attribute_id
-            ),
-            -1
+            (i for i, a in enumerate(self.attributes) if a.id == attribute_id), -1
         )
 
     def get_attribute_by_type(
