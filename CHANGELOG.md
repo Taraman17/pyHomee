@@ -2,6 +2,37 @@
 
 
 
+## v1.1.0 (2025-01-01)
+
+### Feature
+
+* feat: Add listeners to Attribute, Group and Settings ([`bfdb615`](https://github.com/Taraman17/pyHomee/commit/bfdb6154d013ddfea8fc5aada73245d18e787f93))
+
+* feat: add instance to get_attribute_by_type ([`f0a3413`](https://github.com/Taraman17/pyHomee/commit/f0a3413b81e31b1807e7b486540d7c71792ed796))
+
+* feat: Add get_value to HommeAttribute ([`3c87cb5`](https://github.com/Taraman17/pyHomee/commit/3c87cb53555536bc1a6d5c9eda141729be031ee4))
+
+### Fix
+
+* fix: add py.typed and bump min python to 3.11 ([`9269a6f`](https://github.com/Taraman17/pyHomee/commit/9269a6ff980701623866ec83a79fc341f4d89d09))
+
+* fix: typing ([`e39631d`](https://github.com/Taraman17/pyHomee/commit/e39631d1627f04b2e5960701e0decc2703b9ea14))
+
+* fix: make wait functions async ([`7096b6e`](https://github.com/Taraman17/pyHomee/commit/7096b6e82f983fc97c094fae5e167a82cc5c21c0))
+
+* fix: HomeeAttribute.options typing. ([`578389f`](https://github.com/Taraman17/pyHomee/commit/578389f4b086e2702e1d286b4a56ddc3c44c27e8))
+
+* fix: get_attribute_by_type method ([`4eff8cb`](https://github.com/Taraman17/pyHomee/commit/4eff8cbf156c69b2807aa48a33558e2c9636baae))
+
+### Unknown
+
+* Merge pull request #18 from Taraman17/dev
+
+Prepare release 1.1.0 ([`4702180`](https://github.com/Taraman17/pyHomee/commit/4702180d852bef98e5b4649c6ca9f559619f9187))
+
+* Merge branch &#39;master&#39; into dev ([`cd8e9f1`](https://github.com/Taraman17/pyHomee/commit/cd8e9f1b91c9d58e9e3b3cd758f477f2f655ac7a))
+
+
 ## v1.0.3 (2024-12-21)
 
 ### Fix
