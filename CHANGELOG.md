@@ -2,6 +2,27 @@
 
 
 
+## v1.2.0 (2025-01-02)
+
+### Feature
+
+* feat: Add connection listener ([`1c10ea6`](https://github.com/Taraman17/pyHomee/commit/1c10ea6ef7a3c5c07eda90dae5907850badd19f1))
+
+### Fix
+
+* fix: lower logging level, since logging is done in HA ([`84d1674`](https://github.com/Taraman17/pyHomee/commit/84d1674b657191d05e0e19561e9159e61378930b))
+
+* fix: Fix HomeeAuthException is not inheriting from BaseException Taraman17/pyHomee#16 ([`9bd6bf0`](https://github.com/Taraman17/pyHomee/commit/9bd6bf0a12c5cac50712fbccdedd806ff0a8bc72))
+
+### Unknown
+
+* Merge pull request #19 from Taraman17/dev
+
+Prepare release 1.2.0
+
+closes #16 ([`783d19d`](https://github.com/Taraman17/pyHomee/commit/783d19d281a1e7aa7e38c5945beb67f8f65580d5))
+
+
 ## v1.1.0 (2025-01-01)
 
 ### Feature
