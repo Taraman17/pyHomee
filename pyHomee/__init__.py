@@ -1,13 +1,13 @@
 """Library for interacting with the homee smart home/home automation platform."""
 
 import asyncio
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 import hashlib
 import json
 import logging
 import re
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 import aiohttp
 import aiohttp.client_exceptions
@@ -71,6 +71,7 @@ class Homee:
         self._message_queue = asyncio.Queue()
         self._connected_event = asyncio.Event()
         self._disconnected_event = asyncio.Event()
+        self._connection_listeners = []
 
     async def get_access_token(self) -> str:
         """Try asynchronously to get an access token from homee using username and password."""
@@ -147,14 +148,15 @@ class Homee:
             # Sleep after reconnect
             if self.retries > 0:
                 await asyncio.sleep(self.reconnect_interval * self.retries)
-                _LOGGER.info(
+                _LOGGER.debug(
                     "Attempting to reconnect in %s seconds",
                     self.reconnect_interval * self.retries,
                 )
 
             try:
                 await self.get_access_token()
-            except HomeeAuthFailedException("Could not get access token."):
+            except HomeeAuthFailedException as e:
+                _LOGGER.debug("Could not authenticate with Homee: %s", e)
                 # Reconnect
                 self.retries += 1
                 continue
@@ -175,7 +177,7 @@ class Homee:
         Runs until connection is closed again.
         """
 
-        _LOGGER.info("Opening websocket")
+        _LOGGER.debug("Opening websocket")
 
         if self.retries > 0:
             await self.on_reconnect()
@@ -216,9 +218,9 @@ class Homee:
         except websockets.exceptions.WebSocketException as e:
             await self._ws_on_error(e)
         except TimeoutError:
-            _LOGGER.info("Connection Timeout")
+            _LOGGER.debug("Connection Timeout")
         except ConnectionError as e:
-            _LOGGER.info("Connection Error: %s", e)
+            _LOGGER.debug("Connection Error: %s", e)
 
         self.retries += 1
         await self._ws_on_close()
@@ -247,7 +249,7 @@ class Homee:
     async def _ws_on_open(self) -> None:
         """Websocket on_open callback."""
 
-        _LOGGER.info("Connection to websocket successfull")
+        _LOGGER.debug("Connection to websocket successfull")
 
         self.connected = True
 
@@ -294,6 +296,15 @@ class Homee:
 
         self.should_close = True
 
+    async def add_connection_listener(self, listener: Callable[[bool], None]) -> Callable[[], None]:
+        """Add a listener for change in connected state."""
+        self._connection_listeners.append(listener)
+
+        def remove_listener():
+            self._connection_listeners.remove(listener)
+
+        return remove_listener
+
     async def _handle_message(self, msg: dict) -> None:
         """Handle incoming homee messages."""
 
@@ -302,7 +313,7 @@ class Homee:
         try:
             msg_type = list(msg)[0]
         except TypeError:
-            _LOGGER.warning("Invalid message: %s", msg)
+            _LOGGER.info("Invalid message: %s", msg)
             await self.on_error()
             return
 
@@ -364,7 +375,7 @@ class Homee:
         elif msg_type == "warning":
             await self._update_warning(msg["warning"])
         else:
-            _LOGGER.info(
+            _LOGGER.debug(
                 "Unknown/Unsupported message type: %s.\nMessage: %s", msg_type, msg
             )
 
@@ -373,7 +384,7 @@ class Homee:
     async def _handle_attribute_change(self, attribute_data: dict) -> None:
         """Handle an attribute changed message."""
 
-        _LOGGER.info("Updating attribute %s", attribute_data["id"])
+        _LOGGER.debug("Updating attribute %s", attribute_data["id"])
 
         attr_node_id = attribute_data["node_id"]
         node = self.get_node_by_id(attr_node_id)
@@ -494,7 +505,7 @@ class Homee:
     async def set_value(self, device_id: int, attribute_id: int, value: float) -> None:
         """Set the target value of an attribute of a device."""
 
-        _LOGGER.info(
+        _LOGGER.debug(
             "Set value: Device: %s Attribute: %s To: %s", device_id, attribute_id, value
         )
         await self.send(
@@ -503,12 +514,12 @@ class Homee:
 
     async def update_node(self, node_id: int) -> None:
         """Request current data for a node."""
-        _LOGGER.info("Request current data for node %s", node_id)
+        _LOGGER.debug("Request current data for node %s", node_id)
         await self.send(f"GET:/nodes/{node_id}/")
 
     async def update_attribute(self, node_id: int, attribute_id: int) -> None:
         """Request current data for an attribute."""
-        _LOGGER.info(
+        _LOGGER.debug(
             "Request current data for attribute %s of device %s", attribute_id, node_id
         )
         await self.send(f"GET:/nodes/{node_id}/attributes/{attribute_id}")
@@ -540,11 +551,11 @@ class Homee:
 
     async def on_reconnect(self) -> None:
         """Execute right before a reconnection attempt is started."""
-        _LOGGER.info("Homee %s Reconnecting", self.device)
+        _LOGGER.debug("Homee %s Reconnecting", self.device)
 
     async def on_max_retries(self) -> None:
         """Execute if the maximum amount of retries was reached."""
-        _LOGGER.warning(
+        _LOGGER.info(
             "Could not reconnect Homee %s after %s retries",
             self.device,
             self.max_retries,
@@ -552,19 +563,24 @@ class Homee:
 
     async def on_connected(self) -> None:
         """Execute once the websocket connection has been established."""
+        for listener in self._connection_listeners:
+            await listener(True)
         if self.retries > 0:
-            _LOGGER.warning(
+            _LOGGER.debug(
                 "Homee %s Reconnected after %s retries", self.device, self.retries
             )
 
     async def on_disconnected(self, error=None) -> None:
         """Execute after the websocket connection has been closed."""
         if not self.should_close:
-            _LOGGER.warning("Homee %s Disconnected. Error: %s", self.device, error)
+            for listener in self._connection_listeners:
+                await listener(False)
+
+            _LOGGER.info("Homee %s Disconnected. Error: %s", self.device, error)
 
     async def on_error(self, error: str | None = None) -> None:
         """Execute after an error has occurred."""
-        _LOGGER.error("An error occurred: %s", error)
+        _LOGGER.info("An error occurred: %s", error)
 
     async def on_message(self, msg: dict) -> None:
         """Execute when the websocket receives a message.
