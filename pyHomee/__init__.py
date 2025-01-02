@@ -1,13 +1,13 @@
 """Library for interacting with the homee smart home/home automation platform."""
 
 import asyncio
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 import hashlib
 import json
 import logging
 import re
-from typing import Any, Literal
+from typing import Any, Literal, Self
 
 import aiohttp
 import aiohttp.client_exceptions
@@ -71,6 +71,7 @@ class Homee:
         self._message_queue = asyncio.Queue()
         self._connected_event = asyncio.Event()
         self._disconnected_event = asyncio.Event()
+        self._connection_listeners = []
 
     async def get_access_token(self) -> str:
         """Try asynchronously to get an access token from homee using username and password."""
@@ -294,6 +295,15 @@ class Homee:
         """Disconnect from homee by closing the websocket connection."""
 
         self.should_close = True
+
+    async def add_connection_listener(self, listener: Callable[[bool], None]) -> Callable[[], None]:
+        """Add a listener for change in connected state."""
+        self._connection_listeners.append(listener)
+
+        def remove_listener():
+            self._connection_listeners.remove(listener)
+
+        return remove_listener
 
     async def _handle_message(self, msg: dict) -> None:
         """Handle incoming homee messages."""
@@ -553,6 +563,8 @@ class Homee:
 
     async def on_connected(self) -> None:
         """Execute once the websocket connection has been established."""
+        for listener in self._connection_listeners:
+            await listener(True)
         if self.retries > 0:
             _LOGGER.warning(
                 "Homee %s Reconnected after %s retries", self.device, self.retries
@@ -561,7 +573,10 @@ class Homee:
     async def on_disconnected(self, error=None) -> None:
         """Execute after the websocket connection has been closed."""
         if not self.should_close:
-            _LOGGER.warning("Homee %s Disconnected. Error: %s", self.device, error)
+            for listener in self._connection_listeners:
+                await listener(False)
+
+            _LOGGER.info("Homee %s Disconnected. Error: %s", self.device, error)
 
     async def on_error(self, error: str | None = None) -> None:
         """Execute after an error has occurred."""
