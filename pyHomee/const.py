@@ -582,6 +582,7 @@ class AttributeChangedBy(IntEnum):
     ITSELF = 1
     USER = 2
     HOMEEGRAM = 3
+    UNKNOWN = 4
     AI = 6
 
 
