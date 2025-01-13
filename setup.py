@@ -1,23 +1,23 @@
 import setuptools
 
-__version__ = "2.2.0"
+__version__ = "1.2.0"
 
-with open("README.md", "r") as fh:
+with open("README.md", "r", encoding="utf-8") as fh:
     long_description = fh.read()
 
 setuptools.setup(
-    name="pymee",
+    name="pyHomee",
     version=__version__,
-    author="FreshlyBrewedCode",
+    author="Taraman17",
     description="a python library to interact with homee",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    url="https://github.com/FreshlyBrewedCode/pymee",
+    url="https://github.com/Taraman17/pyHomee",
     packages=setuptools.find_packages(),
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
         "Operating System :: OS Independent",
     ],
-    python_requires=">=3.6",
+    python_requires=">=3.11",
 )

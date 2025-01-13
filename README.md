@@ -1,31 +1,33 @@
-# pymee
+# pyHomee
 
-![PyPI](https://img.shields.io/pypi/v/pymee?style=for-the-badge)
-![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pymee?color=blue&logo=python&logoColor=yellow&style=for-the-badge)
-![GitHub last commit](https://img.shields.io/github/last-commit/FreshlyBrewedCode/pymee?style=for-the-badge)
+![PyPI](https://img.shields.io/pypi/v/pyHomee?style=for-the-badge)
+![PyPI - Python Version](https://img.shields.io/pypi/pyversions/pyHomee?color=blue&logo=python&logoColor=yellow&style=for-the-badge)
+![GitHub last commit](https://img.shields.io/github/last-commit/Taraman17/pyHomee?style=for-the-badge)
 
-> pymee is the backbone of the [Home Assistant homee integration](https://github.com/FreshlyBrewedCode/hacs-homee).
+> pyHomee is the backbone of the [Home Assistant homee integration](https://github.com/Taraman17/hass-homee).
 
-pymee is an unofficial python library for interacting with the [homee](https://hom.ee) smart home/home automation platform. It uses the [websockets](https://github.com/aaugustin/websockets) library to connect to a local homee cube and maintains a list of nodes (devices), attributes, groups, users and more that are updated whenever new data arrives from homee.
+pyHomee is an unofficial python library for interacting with the [homee](https://hom.ee) smart home/home automation platform. It uses the [websockets](https://github.com/aaugustin/websockets) library to connect to a local homee cube and maintains a list of nodes (devices), attributes, groups, users and more that are updated whenever new data arrives from homee.
 
 Large parts of this library are directly ported from the awesome [homeeApi](https://github.com/stfnhmplr/homee-api) javascript library.
 
+This library was initially developed as "pymee" by [FreshlyBrewedCode](https://github.com/FreshlyBrewedCode/pymee).
+
 ## Installation
 
-Install from [PyPI](https://pypi.org/project/pymee/):
+Install from [PyPI](https://pypi.org/project/pyHomee/):
 
 ```
-pip install pymee
+pip install pyHomee
 ```
 
 ## Usage
 
 ### Getting started
 
-pymee should be used with `asyncio`:
+pyHomee should be used with `asyncio`:
 
 ```python
-from pymee import Homee
+from pyHomee import Homee
 import asyncio
 import logging
 
@@ -56,7 +58,7 @@ asyncio.run(main())
 ### Access devices and attributes
 
 Devices are represented as "nodes" in the api. All nodes are available in the list `Homee.nodes` and are represented by the `HomeeNode` class.
-Each node has a list of attributes accessible from `HomeeNode.attributes`. The attributes on a node represent the different attributes on a device, i.e. if a light is turned on or the target temperature of a thermostat. Attributes can be identified by the `HomeeAttribute.type` property. You can compare the type with the values from `pymee.const.AttributeType` to figure out what each attribute represents. The value can be accessed with the `HomeeAttribute.current_value` property.
+Each node has a list of attributes accessible from `HomeeNode.attributes`. The attributes on a node represent the different attributes on a device, i.e. if a light is turned on or the target temperature of a thermostat. Attributes can be identified by the `HomeeAttribute.type` property. You can compare the type with the values from `pyHomee.const.AttributeType` to figure out what each attribute represents. The value can be accessed with the `HomeeAttribute.current_value` property.
 
 If you need to change the value of an attribute you can use `Homee.set_value()`:
 
@@ -129,8 +131,8 @@ homee.update_attribute(self, nodeId: int, attributeId: int)
 Example implementation that dumps all info into a json file and logs whenever a light is turned on or off:
 
 ```python
-from pymee.const import NodeProfile, AttributeType
-from pymee.model import HomeeAttribute
+from pyHomee.const import NodeProfile, AttributeType
+from pyHomee.model import HomeeAttribute
 
 class JsonHomee(Homee):
     async def on_message(self, msg: dict):

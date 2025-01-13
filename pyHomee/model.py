@@ -1,9 +1,25 @@
 """Data model for Homees various data items."""
 
 from collections.abc import Callable
+from typing import Any, Self
 import logging
+import re
 from urllib.parse import unquote
-from .const import NodeProtocol, WarningCode
+from .const import (
+    AttributeBasedOn,
+    AttributeChangedBy,
+    AttributeState,
+    AttributeType,
+    DeviceApp,
+    DeviceOS,
+    DeviceType,
+    GroupCategory,
+    NodeProfile,
+    NodeProtocol,
+    NodeState,
+    UserRole,
+    WarningCode,
+)
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -11,12 +27,12 @@ _LOGGER = logging.getLogger(__name__)
 class HomeeAttributeOptions:
     """Representation of attributes options."""
 
-    def __init__(self, attribute_options):
+    def __init__(self, attribute_options) -> None:
         """Initialize options."""
         self._data = attribute_options
 
     @property
-    def can_observe(self) -> list:
+    def can_observe(self) -> list[int]:
         """List (int) of attribute types that this attribute can observe."""
         if "can_observe" in self._data:
             return self._data["can_observe"]
@@ -24,7 +40,7 @@ class HomeeAttributeOptions:
         return []
 
     @property
-    def observes(self) -> list:
+    def observes(self) -> list[int]:
         """List (int) of attribute ids that this attribute observes."""
         if "observes" in self._data:
             return self._data["observes"]
@@ -32,7 +48,7 @@ class HomeeAttributeOptions:
         return []
 
     @property
-    def observed_by(self) -> list:
+    def observed_by(self) -> list[int]:
         """List (int) of attribute ids that observe this attribute."""
         if "observed_by" in self._data:
             return self._data["observed_by"]
@@ -40,7 +56,7 @@ class HomeeAttributeOptions:
         return []
 
     @property
-    def automations(self) -> list:
+    def automations(self) -> list[int]:
         """List (str) of automations for thie attribute."""
         if "automations" in self._data:
             return self._data["automations"]
@@ -48,7 +64,7 @@ class HomeeAttributeOptions:
         return []
 
     @property
-    def history(self) -> list[dict]:
+    def history(self) -> list[dict[str, int | bool]]:
         """History data for the attribute.
 
         {'day': int, 'week': int, 'month': int, 'stepped': bool}.
@@ -73,9 +89,10 @@ class HomeeAttribute:
     def __init__(self, data: dict) -> None:
         """Initialize the attribute."""
         self._data = data
+        self._on_changed_listeners = []
 
     @property
-    def raw_data(self):
+    def raw_data(self) -> dict[str, bool | int | float | str | dict]:
         """Return the raw JSON data of the Attribute."""
         return self._data
 
@@ -95,22 +112,22 @@ class HomeeAttribute:
         return self._data["instance"]
 
     @property
-    def minimum(self) -> int:
+    def minimum(self) -> float:
         """The minimum possible value of the attribute."""
         return self._data["minimum"]
 
     @property
-    def maximum(self) -> int:
+    def maximum(self) -> float:
         """The maximum possible value of the attribute."""
         return self._data["maximum"]
 
     @property
-    def current_value(self) -> int:
+    def current_value(self) -> float:
         """The current value of the attribute."""
         return self._data["current_value"]
 
     @property
-    def target_value(self) -> int:
+    def target_value(self) -> float:
         """The target value of the attribute.
 
         Only used to change the attribute value.
@@ -119,7 +136,7 @@ class HomeeAttribute:
         return self._data["target_value"]
 
     @property
-    def last_value(self) -> int:
+    def last_value(self) -> float:
         """The last value of the attribute. In most cases you want to use current_value instead."""
         return self._data["last_value"]
 
@@ -129,7 +146,7 @@ class HomeeAttribute:
         return unquote(self._data["unit"])
 
     @property
-    def step_value(self) -> int:
+    def step_value(self) -> float:
         """The step value used for attributes with discret increments."""
         return self._data["step_value"]
 
@@ -139,14 +156,14 @@ class HomeeAttribute:
         return bool(self._data["editable"])
 
     @property
-    def type(self) -> int:
+    def type(self) -> AttributeType:
         """The attribute type. Compare with const.AttributeType."""
-        return self._data["type"]
+        return AttributeType(self._data["type"])
 
     @property
-    def state(self) -> int:
+    def state(self) -> AttributeState:
         """The attribute state. Compare with const.AttributeState."""
-        return self._data["state"]
+        return AttributeState(self._data["state"])
 
     @property
     def last_changed(self) -> int:
@@ -154,9 +171,9 @@ class HomeeAttribute:
         return self._data["last_changed"]
 
     @property
-    def changed_by(self) -> int:
+    def changed_by(self) -> AttributeChangedBy:
         """How the attribute was changed. Compare with const.AttributeChangedBy."""
-        return self._data["changed_by"]
+        return AttributeChangedBy(self._data["changed_by"])
 
     @property
     def changed_by_id(self) -> int:
@@ -164,9 +181,9 @@ class HomeeAttribute:
         return self._data["changed_by_id"]
 
     @property
-    def based_on(self) -> int:
+    def based_on(self) -> AttributeBasedOn:
         """TODO"""
-        return self._data["based_on"]
+        return AttributeBasedOn(self._data["based_on"])
 
     @property
     def name(self) -> str:
@@ -184,11 +201,39 @@ class HomeeAttribute:
         if "options" in self._data:
             return HomeeAttributeOptions(self._data["options"])
 
-        return []
+        return None
 
-    def set_data(self, data: str):
+    @property
+    def is_reversed(self) -> bool:
+        """Check if movement direction is reversed."""
+        if self.options is not None:
+            return self.options.reverse_control_ui
+
+        return False
+
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
+        """Add on_changed listener to attribute."""
+        self._on_changed_listeners.append(listener)
+
+        def remove_listener():
+            self._on_changed_listeners.remove(listener)
+
+        return remove_listener
+
+    def set_data(self, data: str) -> None:
         """Update data of the attribute."""
         self._data = data
+
+        for listener in self._on_changed_listeners:
+            listener(self)
+
+    def get_value(self) -> float | str:
+        """Get the current value or data of the attribute."""
+        # If the unit of the attribute is 'text', it is stored in .data
+        if self.unit == "text":
+            return self.data
+
+        return self.current_value
 
 
 class HomeeNode:
@@ -206,7 +251,7 @@ class HomeeNode:
         self.groups: list[HomeeGroup] = []
 
     @property
-    def raw_data(self):
+    def raw_data(self) -> dict[str, bool | int | str | dict]:
         """Return Raw JSON Data of the node."""
         return self._data
 
@@ -221,9 +266,9 @@ class HomeeNode:
         return unquote(self._data["name"])
 
     @property
-    def profile(self) -> int:
+    def profile(self) -> NodeProfile:
         """The NodeProfile of this node."""
-        return self._data["profile"]
+        return NodeProfile(self._data["profile"])
 
     @property
     def image(self) -> str:
@@ -238,18 +283,18 @@ class HomeeNode:
         return self._data["order"]
 
     @property
-    def protocol(self) -> int:
+    def protocol(self) -> NodeProtocol:
         """The network protocol of the node."""
-        return self._data["protocol"]
+        return NodeProtocol(self._data["protocol"])
 
     @property
-    def routing(self) -> int:
-        return self._data["routing"]
+    def routing(self) -> bool:
+        return bool(self._data["routing"])
 
     @property
-    def state(self) -> int:
+    def state(self) -> NodeState:
         """State of availability."""
-        return self._data["state"]
+        return NodeState(self._data["state"])
 
     @property
     def state_changed(self) -> int:
@@ -291,12 +336,12 @@ class HomeeNode:
         return self._data["security"]
 
     @property
-    def attribute_map(self) -> dict | None:
+    def attribute_map(self) -> dict[str, Any] | None:
         """Dict containing all attributes with attributeType as key."""
         return self._attribute_map
 
     @property
-    def attributes_raw(self) -> list[dict]:
+    def attributes_raw(self) -> list[dict[str, Any]]:
         """Return raw JSON of all the node's attributes."""
         return self._data["attributes"]
 
@@ -304,22 +349,38 @@ class HomeeNode:
         """Update data of the node."""
         self._data = data
 
+        self.update_attributes(self._data["attributes"])
+
+        for listener in self._on_changed_listeners:
+            listener(self)
+
     def get_attribute_index(self, attribute_id: int) -> int:
-        """Find and return attribute for a given index."""
+        """Find and return attribute for a given index.
+
+        Returns -1 if not found."""
         return next(
             (i for i, a in enumerate(self.attributes) if a.id == attribute_id), -1
         )
 
-    def get_attribute_by_type(self, attribute_type: int) -> HomeeAttribute:
-        """Find and return attribute by attributeType."""
-        return self._attribute_map[attribute_type]
+    def get_attribute_by_type(
+        self, attribute_type: int, instance: int = 0
+    ) -> HomeeAttribute | None:
+        """Find and return attribute by attributeType.
 
-    def get_attribute_by_id(self, attribute_id: int) -> HomeeAttribute:
+        If multiple attributes of the same type are present,
+        the instance number can be used to select the correct one."""
+        for a in self.attributes:
+            if a.type == attribute_type and a.instance == instance:
+                return a
+
+        return None
+
+    def get_attribute_by_id(self, attribute_id: int) -> HomeeAttribute | None:
         """Find and return attribute for a given id."""
         index = self.get_attribute_index(attribute_id)
         return self.attributes[index] if index != -1 else None
 
-    def add_on_changed_listener(self, listener: Callable) -> Callable:
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
         """Add on_changed listener to node."""
         self._on_changed_listeners.append(listener)
 
@@ -328,29 +389,27 @@ class HomeeNode:
 
         return remove_listener
 
-    def _update_attribute(self, attribute_data: dict):
+    def _update_attribute(self, attribute_data: dict) -> None:
         # TODO: Remove in a future release.
         _LOGGER.warning(
             "_update_attribute() is deprecated - use update_attribute() instead"
         )
         self.update_attribute(attribute_data)
 
-    def update_attribute(self, attribute_data: dict):
+    def update_attribute(self, attribute_data: dict) -> None:
         """Update a single attribute of a node."""
         attribute = self.get_attribute_by_id(attribute_data["id"])
         if attribute is not None:
             attribute.set_data(attribute_data)
-            for listener in self._on_changed_listeners:
-                listener(self, attribute)
 
-    def _update_attributes(self, attributes: list[dict]):
+    def _update_attributes(self, attributes: list[dict]) -> None:
         # TODO: Remove in a future release.
         _LOGGER.warning(
             "_update_attributes() is deprecated - use update_attributes() instead"
         )
         self.update_attributes(attributes)
 
-    def update_attributes(self, attributes: list[dict]):
+    def update_attributes(self, attributes: list[dict]) -> None:
         """Update the given attributes."""
         for attr in attributes:
             self.update_attribute(attr)
@@ -362,7 +421,7 @@ class HomeeNode:
         )
         self.remap_attributes()
 
-    def remap_attributes(self):
+    def remap_attributes(self) -> None:
         """Remap the node's attributes."""
         if self._attribute_map is not None:
             self._attribute_map.clear()
@@ -378,6 +437,7 @@ class HomeeGroup:
     def __init__(self, data) -> None:
         """Initialize a Homee group."""
         self._data = data
+        self._on_changed_listeners = []
         self.nodes: list[HomeeNode] = []
 
     @property
@@ -407,8 +467,8 @@ class HomeeGroup:
         return self._data["state"]
 
     @property
-    def category(self) -> int:
-        return self._data["category"]
+    def category(self) -> GroupCategory:
+        return GroupCategory(self._data["category"])
 
     @property
     def phonetic_name(self) -> str:
@@ -427,9 +487,21 @@ class HomeeGroup:
     def owner(self) -> int:
         return self._data["owner"]
 
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
+        """Add on_changed listener to group."""
+        self._on_changed_listeners.append(listener)
+
+        def remove_listener():
+            self._on_changed_listeners.remove(listener)
+
+        return remove_listener
+
     def set_data(self, data: str) -> None:
         """Update data of the group."""
         self._data = data
+
+        for listener in self._on_changed_listeners:
+            listener(self)
 
 
 class HomeeSettings:
@@ -438,6 +510,7 @@ class HomeeSettings:
     def __init__(self, data: dict) -> None:
         """Initialize settings."""
         self._data = data
+        self._on_changed_listeners = []
 
     @property
     def raw_data(self) -> str:
@@ -500,8 +573,8 @@ class HomeeSettings:
         return self._data["webhooks_key"]
 
     @property
-    def automatic_location_detection(self) -> int:
-        return self._data["automatic_location_detection"]
+    def automatic_location_detection(self) -> bool:
+        return bool(self._data["automatic_location_detection"])
 
     @property
     def polling_interval(self) -> float:
@@ -514,9 +587,9 @@ class HomeeSettings:
         return self._data["timezone"]
 
     @property
-    def enable_analytics(self) -> int:
+    def enable_analytics(self) -> bool:
         """Send analytical data back home."""
-        return self._data["enable_analytics"]
+        return bool(self._data["enable_analytics"])
 
     @property
     def homee_name(self) -> str:
@@ -529,11 +602,11 @@ class HomeeSettings:
 
     @property
     def local_ssl_enabled(self) -> bool:
-        return self._data["local_ssl_enabled"]
+        return bool(self._data["local_ssl_enabled"])
 
     @property
-    def wlan_enabled(self) -> int:
-        return self._data["wlan_enabled"]
+    def wlan_enabled(self) -> bool:
+        return bool(self._data["wlan_enabled"])
 
     @property
     def wlan_ssid(self) -> str:
@@ -544,12 +617,17 @@ class HomeeSettings:
         return self._data["wlan_mode"]
 
     @property
-    def internet_access(self) -> bool:
-        return self._data["internet_access"]
+    def mac_address(self) -> str:
+        """Return MAC Address derived from HomeeID"""
+        return ":".join(re.findall("..", self._data["uid"]))
 
     @property
-    def lan_enabled(self) -> int:
-        return self._data["lan_enabled"]
+    def internet_access(self) -> bool:
+        return bool(self._data["internet_access"])
+
+    @property
+    def lan_enabled(self) -> bool:
+        return bool(self._data["lan_enabled"])
 
     @property
     def lan_ip_address(self) -> str:
@@ -576,7 +654,7 @@ class HomeeSettings:
         return self._data["uid"]
 
     @property
-    def cubes(self) -> list[dict]:
+    def cubes(self) -> list[dict[str, Any]]:
         """List of cubes attached to this Homee."""
         return self._data["cubes"]
 
@@ -584,15 +662,27 @@ class HomeeSettings:
     def extensions(self) -> list[dict]:
         return self._data["extensions"]
 
+    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
+        """Add on_changed listener to group."""
+        self._on_changed_listeners.append(listener)
+
+        def remove_listener():
+            self._on_changed_listeners.remove(listener)
+
+        return remove_listener
+
     def set_data(self, data: str) -> None:
         """Update data of the settings object."""
         self._data = data
+
+        for listener in self._on_changed_listeners:
+            listener(self)
 
 
 class HomeeRelationship:
     """Representation of a Homee relationship."""
 
-    def __init__(self, data):
+    def __init__(self, data) -> None:
         """Initialize the relationship."""
         self._data = data
 
@@ -630,10 +720,10 @@ class HomeeWarningData:
         self._data = data
 
     @property
-    def protocol(self) -> int | None:
+    def protocol(self) -> NodeProtocol | None:
         """Return the protocol, the warning originates from."""
         if "protocol" in self._data:
-            return self._data["protocol"]
+            return NodeProtocol(self._data["protocol"])
 
         return None
 
@@ -642,6 +732,8 @@ class HomeeWarningData:
         """Return the descriptive string for the protocol."""
         if "protocol" in self._data:
             return NodeProtocol(self._data["protocol"]).name
+
+        return ""
 
     @property
     def reason(self) -> str:
@@ -660,7 +752,7 @@ class HomeeWarning:
         self._data = data
 
     @property
-    def raw_data(self):
+    def raw_data(self) -> str:
         """Return Raw JSON Data of the warning."""
         return self._data
 
@@ -690,7 +782,7 @@ class HomeeWarning:
         if "data" in self._data:
             return HomeeWarningData(self._data["data"])
 
-        return []
+        return None
 
     def set_data(self, data: str) -> None:
         """Update data of the warning."""
@@ -705,7 +797,7 @@ class HomeeDevice:
         self._data = data
 
     @property
-    def raw_data(self) -> dict:
+    def raw_data(self) -> str:
         """Return the raw JSON data of the device."""
         return self._data
 
@@ -740,19 +832,19 @@ class HomeeDevice:
         return self._data["last_connected"]
 
     @property
-    def os(self) -> int:
+    def os(self) -> DeviceOS:
         """Return the operating system of the device."""
-        return self._data["os"]
+        return DeviceOS(self._data["os"])
 
     @property
-    def type(self) -> int:
+    def type(self) -> DeviceType:
         """Return the type of the device."""
-        return self._data["type"]
+        return DeviceType(self._data["type"])
 
     @property
-    def app(self) -> int:
+    def app(self) -> DeviceApp:
         """Return the app version of the device."""
-        return self._data["app"]
+        return DeviceApp(self._data["app"])
 
     @property
     def connected(self) -> bool:
@@ -777,7 +869,7 @@ class HomeeUser:
         self._data = data
 
     @property
-    def raw_data(self) -> dict:
+    def raw_data(self) -> str:
         """Return the raw JSON data of the user."""
         return self._data
 
@@ -807,7 +899,7 @@ class HomeeUser:
         return self._data["image"]
 
     @property
-    def role(self) -> int:
+    def role(self) -> UserRole:
         """Return the role of the user."""
         return self._data["role"]
 
@@ -974,13 +1066,12 @@ class HomeeUser:
     @property
     def devices(self) -> list[HomeeDevice]:
         """Return the list of devices associated with the user."""
-        return self._devices
+        devices = []
+        for device in self._data["devices"]:
+            devices.append(HomeeDevice(device))
+
+        return devices
 
     def set_data(self, data: str) -> None:
         """Update data of the user"""
         self._data = data
-
-
-# JSON to Python regex:
-# Match: "([^"]*)":[^,]*,
-# Replace: @property\ndef $1(self):\n\treturn self._data["$1"]\n
