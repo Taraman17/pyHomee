@@ -227,7 +227,7 @@ class Homee:
         self.retries += 1
         await self._ws_on_close()
 
-    async def _ws_receive_handler(self, ws: websockets.WebSocketClientProtocol) -> None:
+    async def _ws_receive_handler(self, ws: websockets.ClientProtocol) -> None:
         try:
             msg = await ws.recv()
             await self._ws_on_message(msg)
@@ -238,7 +238,7 @@ class Homee:
                 self.connected = False
                 raise e
 
-    async def _ws_send_handler(self, ws: websockets.WebSocketClientProtocol) -> None:
+    async def _ws_send_handler(self, ws: websockets.ClientProtocol) -> None:
         try:
             msg = await self._message_queue.get()
             if self.connected and not self.should_close:
