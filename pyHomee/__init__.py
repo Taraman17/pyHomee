@@ -25,6 +25,8 @@ from .model import (
     HomeeWarning,
 )
 
+import os
+
 _LOGGER = logging.getLogger(__name__)
 
 
@@ -569,6 +571,24 @@ class Homee:
             _LOGGER.debug(
                 "Homee %s Reconnected after %s retries", self.device, self.retries
             )
+
+        # mock code
+        path = "/workspaces/temp/pymee/mock"
+        loop = asyncio.get_running_loop()
+        _LOGGER.info("Mocking devices")
+
+        if os.path.exists(path):
+            def blocking_listdir(path):
+                return os.listdir(path)
+            directory = await loop.run_in_executor(None, blocking_listdir, path)
+            if len(directory) > 0:
+
+                for file in directory:
+                    def blocking_file_read(path, file):
+                        with open(f"{path}/{file}") as f:
+                            return f.read()
+                    message = await loop.run_in_executor(None, blocking_file_read, path, file)
+                    await self._handle_message(json.loads(message))
 
     async def on_disconnected(self, error=None) -> None:
         """Execute after the websocket connection has been closed."""
