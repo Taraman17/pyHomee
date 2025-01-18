@@ -8,6 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="pyHomee",
     version=__version__,
+    license="MIT",
     author="Taraman17",
     description="a python library to interact with homee",
     long_description=long_description,
