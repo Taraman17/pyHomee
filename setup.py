@@ -20,4 +20,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.11",
+    install_requires=[
+        "aiohttp>=3.11",
+        "websockets>=13",
+    ],
 )
