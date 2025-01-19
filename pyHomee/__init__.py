@@ -1,7 +1,7 @@
 """Library for interacting with the homee smart home/home automation platform."""
 
 import asyncio
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 import hashlib
 import json
@@ -72,7 +72,9 @@ class Homee:
         self._message_queue = asyncio.Queue()
         self._connected_event = asyncio.Event()
         self._disconnected_event = asyncio.Event()
-        self._connection_listeners = []
+        self._connection_listeners: list[
+            Callable[[bool], Coroutine[Any, Any, None]]
+        ] = []
 
     async def get_access_token(self) -> str:
         """Try asynchronously to get an access token from homee using username and password."""
@@ -301,7 +303,9 @@ class Homee:
 
         self.should_close = True
 
-    async def add_connection_listener(self, listener: Callable[[bool], Awaitable[None]]) -> Callable[[], None]:
+    async def add_connection_listener(
+        self, listener: Callable[[bool], Coroutine[Any, Any, None]]
+    ) -> Callable[[], None]:
         """Add a listener for change in connected state."""
         self._connection_listeners.append(listener)
 
