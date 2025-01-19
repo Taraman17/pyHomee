@@ -1,18 +1,19 @@
 """Library for interacting with the homee smart home/home automation platform."""
 
 import asyncio
-from collections.abc import Awaitable, Callable, Coroutine
+from collections.abc import Callable, Coroutine
 from datetime import datetime
 import hashlib
 import json
 import logging
 import re
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 import aiohttp
 import aiohttp.client_exceptions
 from aiohttp.helpers import BasicAuth
-import websockets
+import websockets.asyncio.client
+import websockets.exceptions
 
 from .const import DeviceApp, DeviceOS, DeviceType
 from .model import (
@@ -70,10 +71,12 @@ class Homee:
         self.retries: int = 0
         self.should_close: bool = False
 
-        self._message_queue = asyncio.Queue()
+        self._message_queue: asyncio.Queue[str] = asyncio.Queue()
         self._connected_event = asyncio.Event()
         self._disconnected_event = asyncio.Event()
-        self._connection_listeners = []
+        self._connection_listeners: list[
+            Callable[[bool], Coroutine[Any, Any, None]]
+        ] = []
 
     async def get_access_token(self) -> str:
         """Try asynchronously to get an access token from homee using username and password."""
@@ -185,7 +188,7 @@ class Homee:
             await self.on_reconnect()
 
         try:
-            async with websockets.connect(
+            async with websockets.asyncio.client.connect(
                 uri=f"{self.ws_url}/connection?access_token={self.token}",
                 subprotocols=["v2"],
             ) as ws:
@@ -227,7 +230,9 @@ class Homee:
         self.retries += 1
         await self._ws_on_close()
 
-    async def _ws_receive_handler(self, ws: websockets.ClientProtocol) -> None:
+    async def _ws_receive_handler(
+        self, ws: websockets.asyncio.client.ClientConnection
+    ) -> None:
         try:
             msg = await ws.recv()
             await self._ws_on_message(msg)
@@ -238,7 +243,9 @@ class Homee:
                 self.connected = False
                 raise e
 
-    async def _ws_send_handler(self, ws: websockets.ClientProtocol) -> None:
+    async def _ws_send_handler(
+        self, ws: websockets.asyncio.client.ClientConnection
+    ) -> None:
         try:
             msg = await self._message_queue.get()
             if self.connected and not self.should_close:
@@ -251,7 +258,7 @@ class Homee:
     async def _ws_on_open(self) -> None:
         """Websocket on_open callback."""
 
-        _LOGGER.debug("Connection to websocket successfull")
+        _LOGGER.debug("Connection to websocket successful")
 
         self.connected = True
 
@@ -298,7 +305,9 @@ class Homee:
 
         self.should_close = True
 
-    async def add_connection_listener(self, listener: Callable[[bool], Awaitable[None]]) -> Callable[[], None]:
+    async def add_connection_listener(
+        self, listener: Callable[[bool], Coroutine[Any, Any, None]]
+    ) -> Callable[[], None]:
         """Add a listener for change in connected state."""
         self._connection_listeners.append(listener)
 
@@ -543,11 +552,11 @@ class Homee:
 
         return f"ws://{self.host}:7681"
 
-    async def wait_until_connected(self) -> Coroutine[Any, Any, Literal[True]]:
+    async def wait_until_connected(self) -> Literal[True]:
         """Return a coroutine that runs until a connection has been established."""
         return await self._connected_event.wait()
 
-    async def wait_until_disconnected(self) -> Coroutine[Any, Any, Literal[True]]:
+    async def wait_until_disconnected(self) -> Literal[True]:
         """Return a coroutine that runs until the connection has been closed."""
         return await self._disconnected_event.wait()
 
