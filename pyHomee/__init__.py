@@ -7,7 +7,7 @@ import hashlib
 import json
 import logging
 import re
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 import aiohttp
 import aiohttp.client_exceptions
@@ -69,7 +69,7 @@ class Homee:
         self.retries: int = 0
         self.should_close: bool = False
 
-        self._message_queue = asyncio.Queue()
+        self._message_queue: asyncio.Queue[str] = asyncio.Queue()
         self._connected_event = asyncio.Event()
         self._disconnected_event = asyncio.Event()
         self._connection_listeners: list[
@@ -256,7 +256,7 @@ class Homee:
     async def _ws_on_open(self) -> None:
         """Websocket on_open callback."""
 
-        _LOGGER.debug("Connection to websocket successfull")
+        _LOGGER.debug("Connection to websocket successful")
 
         self.connected = True
 
@@ -550,11 +550,11 @@ class Homee:
 
         return f"ws://{self.host}:7681"
 
-    async def wait_until_connected(self) -> Coroutine[Any, Any, Literal[True]]:
+    async def wait_until_connected(self) -> Literal[True]:
         """Return a coroutine that runs until a connection has been established."""
         return await self._connected_event.wait()
 
-    async def wait_until_disconnected(self) -> Coroutine[Any, Any, Literal[True]]:
+    async def wait_until_disconnected(self) -> Literal[True]:
         """Return a coroutine that runs until the connection has been closed."""
         return await self._disconnected_event.wait()
 
