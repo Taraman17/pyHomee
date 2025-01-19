@@ -12,7 +12,8 @@ from typing import Any, Literal, Self
 import aiohttp
 import aiohttp.client_exceptions
 from aiohttp.helpers import BasicAuth
-import websockets
+import websockets.asyncio.client
+import websockets.exceptions
 
 from .const import DeviceApp, DeviceOS, DeviceType
 from .model import (
@@ -183,7 +184,7 @@ class Homee:
             await self.on_reconnect()
 
         try:
-            async with websockets.connect(
+            async with websockets.asyncio.client.connect(
                 uri=f"{self.ws_url}/connection?access_token={self.token}",
                 subprotocols=["v2"],
             ) as ws:
@@ -225,7 +226,9 @@ class Homee:
         self.retries += 1
         await self._ws_on_close()
 
-    async def _ws_receive_handler(self, ws: websockets.ClientProtocol) -> None:
+    async def _ws_receive_handler(
+        self, ws: websockets.asyncio.client.ClientConnection
+    ) -> None:
         try:
             msg = await ws.recv()
             await self._ws_on_message(msg)
@@ -236,7 +239,9 @@ class Homee:
                 self.connected = False
                 raise e
 
-    async def _ws_send_handler(self, ws: websockets.ClientProtocol) -> None:
+    async def _ws_send_handler(
+        self, ws: websockets.asyncio.client.ClientConnection
+    ) -> None:
         try:
             msg = await self._message_queue.get()
             if self.connected and not self.should_close:
