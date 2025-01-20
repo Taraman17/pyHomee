@@ -2,6 +2,57 @@
 
 
 
+## v1.2.1 (2025-01-20)
+
+### Fix
+
+* fix: Minor improvements and cleanup ([`71cbdab`](https://github.com/Taraman17/pyHomee/commit/71cbdab0a851ac0658bac539a5c367d69045d828))
+
+* fix: connection_listeners typing ([`d2bc9ae`](https://github.com/Taraman17/pyHomee/commit/d2bc9aea645466c69b8c41712623c85e8268c441))
+
+* fix: Add unknown value 4 to AttributeChangedBy ([`925a167`](https://github.com/Taraman17/pyHomee/commit/925a16726e7ad3678d1f445794dcba58e6e5569c))
+
+* fix: deprecated WebSocketsClientProtocol ([`ecd298c`](https://github.com/Taraman17/pyHomee/commit/ecd298c215c47810dc5046b70ba6ad49dff0ebeb))
+
+* fix: connection_listener typing ([`4bf6915`](https://github.com/Taraman17/pyHomee/commit/4bf691507397447518e4e2d4199e396bb5fadf9c))
+
+### Unknown
+
+* Merge pull request #26 from Taraman17/dev
+
+fix: typing and other refactorings. ([`aaf1563`](https://github.com/Taraman17/pyHomee/commit/aaf1563badf31eb875f9a9835621663c88e6497c))
+
+* Merge pull request #22 from cdce8p/minor-improvements
+
+fix: Minor improvements and cleanup ([`698f400`](https://github.com/Taraman17/pyHomee/commit/698f40049250b630c484a29e2629e0e408a20c10))
+
+* Merge pull request #21 from cdce8p/fix-connection-listeners-typing
+
+fix: connection_listeners typing ([`1fc0087`](https://github.com/Taraman17/pyHomee/commit/1fc00877b1ea2995ce65ad0e57e0d2a04c04dd50))
+
+* Merge pull request #24 from cdce8p/metadata-license
+
+build: Add License field to project metadata ([`87ea01b`](https://github.com/Taraman17/pyHomee/commit/87ea01b4d306d62fc173db0bdfccc08aabed5551))
+
+* Merge pull request #23 from cdce8p/websockets-14
+
+fix: Add websockets v14 compatibility ([`9c712a5`](https://github.com/Taraman17/pyHomee/commit/9c712a5f4ef7db1f444dd6292c6e4ea44bbdaeea))
+
+* Merge branch &#39;dev&#39; into websockets-14 ([`5a7d220`](https://github.com/Taraman17/pyHomee/commit/5a7d220eb991a7603e4b7acb19cf96f6c6d4c908))
+
+* Merge pull request #20 from cdce8p/install_requires
+
+Add install requirements ([`22397d7`](https://github.com/Taraman17/pyHomee/commit/22397d71c244ccaf9300cbe6c70718c6f5e5836f))
+
+* Add License field to project metadata ([`9f70eda`](https://github.com/Taraman17/pyHomee/commit/9f70edac963517223d4163706e479d0139a0144b))
+
+* Add websockets v14 compatibility ([`31cef5d`](https://github.com/Taraman17/pyHomee/commit/31cef5d901376ae56c3d2d4c4a4c88312ebc55b5))
+
+* Add install requirements ([`e045df5`](https://github.com/Taraman17/pyHomee/commit/e045df563f625cb5fdebf310e7ae89268095295a))
+
+* Merge branch &#39;master&#39; into dev ([`d347b35`](https://github.com/Taraman17/pyHomee/commit/d347b35e0e0df7a8d7dc6ef55d0d1594133b40b4))
+
+
 ## v1.2.0 (2025-01-02)
 
 ### Feature
