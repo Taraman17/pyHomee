@@ -2,9 +2,24 @@
 
 
 
+## v1.2.2 (2025-01-20)
+
+### Unknown
+
+* Merge pull request #27 from Taraman17/dev
+
+fix: move py.typed to correct location ([`1bafc3e`](https://github.com/Taraman17/pyHomee/commit/1bafc3e4e42ce0eccd566953f9674ebe190b1b3e))
+
+* Merge pull request #25 from cdce8p/move-py-typed
+
+fix: Move py.typed to the correct folder ([`f2614a4`](https://github.com/Taraman17/pyHomee/commit/f2614a488270da783337f106fd91d8cd6d999ec4))
+
+
 ## v1.2.1 (2025-01-20)
 
 ### Fix
+
+* fix: Move py.typed to the correct folder ([`76bc8c3`](https://github.com/Taraman17/pyHomee/commit/76bc8c3347400b807aed4469321c54862c3281dd))
 
 * fix: Minor improvements and cleanup ([`71cbdab`](https://github.com/Taraman17/pyHomee/commit/71cbdab0a851ac0658bac539a5c367d69045d828))
 
