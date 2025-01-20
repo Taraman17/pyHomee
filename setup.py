@@ -8,6 +8,7 @@ with open("README.md", "r", encoding="utf-8") as fh:
 setuptools.setup(
     name="pyHomee",
     version=__version__,
+    license="MIT",
     author="Taraman17",
     description="a python library to interact with homee",
     long_description=long_description,
@@ -20,4 +21,8 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.11",
+    install_requires=[
+        "aiohttp>=3.11",
+        "websockets>=13",
+    ],
 )
