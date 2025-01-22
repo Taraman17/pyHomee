@@ -245,7 +245,7 @@ class HomeeNode:
         self.attributes: list[HomeeAttribute] = []
         for a in self.attributes_raw:
             self.attributes.append(HomeeAttribute(a))
-        self._attribute_map: dict = None
+        self._attribute_map: dict[AttributeType, HomeeAttribute] = None
         self.remap_attributes()
         self._on_changed_listeners = []
         self.groups: list[HomeeGroup] = []
@@ -336,7 +336,7 @@ class HomeeNode:
         return self._data["security"]
 
     @property
-    def attribute_map(self) -> dict[str, Any] | None:
+    def attribute_map(self) -> dict[AttributeType, HomeeAttribute] | None:
         """Dict containing all attributes with attributeType as key."""
         return self._attribute_map
 
