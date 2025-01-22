@@ -2,6 +2,19 @@
 
 
 
+## v1.2.3 (2025-01-22)
+
+### Fix
+
+* fix: typing of HomeeNode._attribute_map ([`0aaeac0`](https://github.com/Taraman17/pyHomee/commit/0aaeac0674b761ddf71cac79214a7374f8291399))
+
+### Unknown
+
+* Merge pull request #28 from Taraman17/dev
+
+fix: typing of HomeeNode._attribute_map ([`bf315a2`](https://github.com/Taraman17/pyHomee/commit/bf315a278d77c40691e2dc618bfcc374cbaac638))
+
+
 ## v1.2.2 (2025-01-20)
 
 ### Unknown
