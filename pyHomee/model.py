@@ -244,7 +244,9 @@ class HomeeNode:
         self._data = data
         self.attributes: list[HomeeAttribute] = []
         for a in self.attributes_raw:
-            self.attributes.append(HomeeAttribute(a))
+            new_attribute = HomeeAttribute(a)
+            new_attribute.add_on_changed_listener(self._on_attribute_changed)
+            self.attributes.append(new_attribute)
         self._attribute_map: dict[AttributeType, HomeeAttribute] = None
         self.remap_attributes()
         self._on_changed_listeners = []
@@ -380,6 +382,10 @@ class HomeeNode:
         index = self.get_attribute_index(attribute_id)
         return self.attributes[index] if index != -1 else None
 
+    def _on_attribute_changed(self, attribute: HomeeAttribute) -> None:
+        for listener in self._on_changed_listeners:
+            listener(self)
+
     def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
         """Add on_changed listener to node."""
         self._on_changed_listeners.append(listener)
@@ -389,37 +395,16 @@ class HomeeNode:
 
         return remove_listener
 
-    def _update_attribute(self, attribute_data: dict) -> None:
-        # TODO: Remove in a future release.
-        _LOGGER.warning(
-            "_update_attribute() is deprecated - use update_attribute() instead"
-        )
-        self.update_attribute(attribute_data)
-
     def update_attribute(self, attribute_data: dict) -> None:
         """Update a single attribute of a node."""
         attribute = self.get_attribute_by_id(attribute_data["id"])
         if attribute is not None:
             attribute.set_data(attribute_data)
 
-    def _update_attributes(self, attributes: list[dict]) -> None:
-        # TODO: Remove in a future release.
-        _LOGGER.warning(
-            "_update_attributes() is deprecated - use update_attributes() instead"
-        )
-        self.update_attributes(attributes)
-
     def update_attributes(self, attributes: list[dict]) -> None:
         """Update the given attributes."""
         for attr in attributes:
             self.update_attribute(attr)
-
-    def _remap_attributes(self):
-        # TODO: Remove in a future release.
-        _LOGGER.warning(
-            "_remap_attributes() is deprecated - use remap_attributes() instead"
-        )
-        self.remap_attributes()
 
     def remap_attributes(self) -> None:
         """Remap the node's attributes."""
