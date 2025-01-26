@@ -2,6 +2,19 @@
 
 
 
+## v1.2.4 (2025-01-25)
+
+### Fix
+
+* fix: notify node of changed attributes ([`e2d6004`](https://github.com/Taraman17/pyHomee/commit/e2d600480622d0272eb7ca4aee7ca63246bd5b89))
+
+### Unknown
+
+* Merge pull request #29 from Taraman17/dev
+
+fix: notify node of changed attributes ([`26468be`](https://github.com/Taraman17/pyHomee/commit/26468be2d5a81db5f7a9aa367284edd591b2a068))
+
+
 ## v1.2.3 (2025-01-22)
 
 ### Fix
