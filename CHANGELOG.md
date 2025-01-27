@@ -2,6 +2,19 @@
 
 
 
+## v1.2.5 (2025-01-26)
+
+### Fix
+
+* fix: make connection listener sync ([`7fdb4d6`](https://github.com/Taraman17/pyHomee/commit/7fdb4d64476a9eae1a6875c81a49749e66d4c5f7))
+
+### Unknown
+
+* Merge pull request #30 from Taraman17/dev
+
+fix: make connection listener sync ([`851051d`](https://github.com/Taraman17/pyHomee/commit/851051d091f14160aefb3612821c449082b7996f))
+
+
 ## v1.2.4 (2025-01-25)
 
 ### Fix
