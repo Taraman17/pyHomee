@@ -2,6 +2,19 @@
 
 
 
+## v1.2.6 (2025-02-08)
+
+### Fix
+
+* fix: Add RAINFALL_INTENSITY and sorting of AttributeTypes ([`5294e5c`](https://github.com/Taraman17/pyHomee/commit/5294e5cf14f7a40f4992ab16464a8a45f54d2682))
+
+### Unknown
+
+* Merge pull request #31 from Taraman17/dev
+
+fix: Add RAINFALL_INTENSITY and sorting of AttributeTypes ([`b32b16d`](https://github.com/Taraman17/pyHomee/commit/b32b16d99c49d099feda7648e3dacea8a1edc952))
+
+
 ## v1.2.5 (2025-01-26)
 
 ### Fix
