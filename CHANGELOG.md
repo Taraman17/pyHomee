@@ -2,6 +2,19 @@
 
 
 
+## v1.2.7 (2025-02-10)
+
+### Fix
+
+* fix: exception handling on ws connect. ([`8a48b34`](https://github.com/Taraman17/pyHomee/commit/8a48b34142de18971eedbbbb679abe8f4b55321b))
+
+### Unknown
+
+* Merge pull request #32 from Taraman17/dev
+
+fix: exception handling on ws connect. ([`3004a57`](https://github.com/Taraman17/pyHomee/commit/3004a57a0005e31c4ec3ba498dfea6406613a011))
+
+
 ## v1.2.6 (2025-02-08)
 
 ### Fix
