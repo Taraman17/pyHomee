@@ -218,12 +218,12 @@ class Homee:
                     except websockets.exceptions.ConnectionClosedError as e:
                         self.connected = False
                         await self.on_disconnected(e)
-        except websockets.exceptions.WebSocketException as e:
+        except (
+            websockets.exceptions.WebSocketException,
+            ConnectionError,
+            OSError,
+        ) as e:
             await self._ws_on_error(e)
-        except TimeoutError:
-            _LOGGER.debug("Connection Timeout")
-        except ConnectionError as e:
-            _LOGGER.debug("Connection Error: %s", e)
 
         self.retries += 1
         await self._ws_on_close()
@@ -280,7 +280,7 @@ class Homee:
 
             await self.on_disconnected()
 
-    async def _ws_on_error(self, error) -> None:
+    async def _ws_on_error(self, error: Exception) -> None:
         """Websocket on_error callback."""
 
         await self.on_error(error)
@@ -579,7 +579,7 @@ class Homee:
                 "Homee %s Reconnected after %s retries", self.device, self.retries
             )
 
-    async def on_disconnected(self, error=None) -> None:
+    async def on_disconnected(self, error: Exception | None = None) -> None:
         """Execute after the websocket connection has been closed."""
         if not self.should_close:
             for listener in self._connection_listeners:
@@ -587,9 +587,9 @@ class Homee:
 
             _LOGGER.info("Homee %s Disconnected. Error: %s", self.device, error)
 
-    async def on_error(self, error: str | None = None) -> None:
+    async def on_error(self, error: Exception | None = None) -> None:
         """Execute after an error has occurred."""
-        _LOGGER.info("An error occurred: %s", error)
+        _LOGGER.info("An error occurred: %s", error.__cause__)
 
     async def on_message(self, msg: dict) -> None:
         """Execute when the websocket receives a message.
