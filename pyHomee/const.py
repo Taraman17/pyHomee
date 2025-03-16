@@ -589,6 +589,7 @@ class AttributeChangedBy(IntEnum):
 
 @unique
 class AttributeBasedOn(IntEnum):
+    NONE = 0
     EVENTS = 1
     INTERVAL = 2
     POLLING = 4
@@ -606,6 +607,7 @@ class HomeegramState(IntEnum):
 
 @unique
 class WarningCode(IntEnum):
+    NONE = 0
     CUBE_ADDED = 100
     CUBE_REMOVED = 101
     CUBE_IS_MISSING = 102
@@ -758,6 +760,7 @@ class ErrorCode(IntEnum):
 
 @unique
 class UserRole(IntEnum):
+    NONE = 0
     SERVICE = 1
     ADMIN = 2
     STANDARD = 3
