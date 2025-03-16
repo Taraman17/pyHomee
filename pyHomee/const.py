@@ -421,6 +421,7 @@ class AttributeType(IntEnum):
     DEVICE_REMAINING_TIME = 214
     DEVICE_START_TIME = 215
     DEVICE_PROGRAM = 216
+    MULTILEVEL_INPUT = 222
     BUTTON_PRESSED3TIMES = 223
     BUTTON_PRESSED4TIMES = 224
     BUTTON_PRESSED5TIMES = 225
@@ -589,6 +590,7 @@ class AttributeChangedBy(IntEnum):
 
 @unique
 class AttributeBasedOn(IntEnum):
+    NONE = 0
     EVENTS = 1
     INTERVAL = 2
     POLLING = 4
@@ -606,6 +608,7 @@ class HomeegramState(IntEnum):
 
 @unique
 class WarningCode(IntEnum):
+    NONE = 0
     CUBE_ADDED = 100
     CUBE_REMOVED = 101
     CUBE_IS_MISSING = 102
@@ -758,6 +761,7 @@ class ErrorCode(IntEnum):
 
 @unique
 class UserRole(IntEnum):
+    NONE = 0
     SERVICE = 1
     ADMIN = 2
     STANDARD = 3

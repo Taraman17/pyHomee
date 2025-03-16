@@ -1,7 +1,9 @@
 """Data model for Homees various data items."""
 
+from enum import IntEnum
+
 from collections.abc import Callable
-from typing import Any, Self
+from typing import Any, Self, Type
 import logging
 import re
 from urllib.parse import unquote
@@ -22,6 +24,18 @@ from .const import (
 )
 
 _LOGGER = logging.getLogger(__name__)
+
+
+def log_unknown_value(enum_type: Type[IntEnum], value: int) -> None:
+    """Log a warning if a value does not exist in an enum."""
+    _LOGGER.warning(
+        (
+            "Unknown %s %s. Please submit a bug report at "
+            "https://github.com/Taraman17/pyHomee/issues"
+        ),
+        enum_type.__name__,
+        value,
+    )
 
 
 class HomeeAttributeOptions:
@@ -158,12 +172,22 @@ class HomeeAttribute:
     @property
     def type(self) -> AttributeType:
         """The attribute type. Compare with const.AttributeType."""
-        return AttributeType(self._data["type"])
+        try:
+            return AttributeType(self._data["type"])
+        except ValueError:
+            log_unknown_value(AttributeType, self._data["type"])
+
+        return AttributeType.NONE
 
     @property
     def state(self) -> AttributeState:
         """The attribute state. Compare with const.AttributeState."""
-        return AttributeState(self._data["state"])
+        try:
+            return AttributeState(self._data["state"])
+        except ValueError:
+            log_unknown_value(AttributeState, self._data["state"])
+
+        return AttributeState.NONE
 
     @property
     def last_changed(self) -> int:
@@ -173,7 +197,12 @@ class HomeeAttribute:
     @property
     def changed_by(self) -> AttributeChangedBy:
         """How the attribute was changed. Compare with const.AttributeChangedBy."""
-        return AttributeChangedBy(self._data["changed_by"])
+        try:
+            return AttributeChangedBy(self._data["changed_by"])
+        except ValueError:
+            log_unknown_value(AttributeChangedBy, self._data["changed_by"])
+
+        return AttributeChangedBy.NONE
 
     @property
     def changed_by_id(self) -> int:
@@ -183,7 +212,12 @@ class HomeeAttribute:
     @property
     def based_on(self) -> AttributeBasedOn:
         """TODO"""
-        return AttributeBasedOn(self._data["based_on"])
+        try:
+            return AttributeBasedOn(self._data["based_on"])
+        except ValueError:
+            log_unknown_value(AttributeBasedOn, self._data["based_on"])
+
+        return AttributeBasedOn.NONE
 
     @property
     def name(self) -> str:
@@ -196,7 +230,7 @@ class HomeeAttribute:
         return self._data["data"]
 
     @property
-    def options(self) -> HomeeAttributeOptions:
+    def options(self) -> HomeeAttributeOptions | None:
         """The options collection of the attribute. Optional, not on every attribute."""
         if "options" in self._data:
             return HomeeAttributeOptions(self._data["options"])
@@ -211,7 +245,9 @@ class HomeeAttribute:
 
         return False
 
-    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
         """Add on_changed listener to attribute."""
         self._on_changed_listeners.append(listener)
 
@@ -270,7 +306,12 @@ class HomeeNode:
     @property
     def profile(self) -> NodeProfile:
         """The NodeProfile of this node."""
-        return NodeProfile(self._data["profile"])
+        try:
+            return NodeProfile(self._data["profile"])
+        except ValueError:
+            log_unknown_value(NodeProfile, self._data["profile"])
+
+        return NodeProfile.NONE
 
     @property
     def image(self) -> str:
@@ -287,7 +328,12 @@ class HomeeNode:
     @property
     def protocol(self) -> NodeProtocol:
         """The network protocol of the node."""
-        return NodeProtocol(self._data["protocol"])
+        try:
+            return NodeProtocol(self._data["protocol"])
+        except ValueError:
+            log_unknown_value(NodeProfile, self._data["protocol"])
+
+        return NodeProtocol.NONE
 
     @property
     def routing(self) -> bool:
@@ -296,7 +342,12 @@ class HomeeNode:
     @property
     def state(self) -> NodeState:
         """State of availability."""
-        return NodeState(self._data["state"])
+        try:
+            return NodeState(self._data["state"])
+        except ValueError:
+            log_unknown_value(NodeState, self._data["state"])
+
+        return NodeState.NONE
 
     @property
     def state_changed(self) -> int:
@@ -386,7 +437,9 @@ class HomeeNode:
         for listener in self._on_changed_listeners:
             listener(self)
 
-    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
         """Add on_changed listener to node."""
         self._on_changed_listeners.append(listener)
 
@@ -453,7 +506,12 @@ class HomeeGroup:
 
     @property
     def category(self) -> GroupCategory:
-        return GroupCategory(self._data["category"])
+        try:
+            return GroupCategory(self._data["category"])
+        except ValueError:
+            log_unknown_value(GroupCategory, self._data["category"])
+
+        return GroupCategory.NONE
 
     @property
     def phonetic_name(self) -> str:
@@ -472,7 +530,9 @@ class HomeeGroup:
     def owner(self) -> int:
         return self._data["owner"]
 
-    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
         """Add on_changed listener to group."""
         self._on_changed_listeners.append(listener)
 
@@ -647,7 +707,9 @@ class HomeeSettings:
     def extensions(self) -> list[dict]:
         return self._data["extensions"]
 
-    def add_on_changed_listener(self, listener: Callable[[Self], None]) -> Callable[[], None]:
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
         """Add on_changed listener to group."""
         self._on_changed_listeners.append(listener)
 
@@ -708,7 +770,12 @@ class HomeeWarningData:
     def protocol(self) -> NodeProtocol | None:
         """Return the protocol, the warning originates from."""
         if "protocol" in self._data:
-            return NodeProtocol(self._data["protocol"])
+            try:
+                return NodeProtocol(self._data["protocol"])
+            except ValueError:
+                log_unknown_value(NodeProtocol, self._data["protocol"])
+
+            return NodeProtocol.NONE
 
         return None
 
@@ -716,7 +783,12 @@ class HomeeWarningData:
     def protocol_string(self) -> str:
         """Return the descriptive string for the protocol."""
         if "protocol" in self._data:
-            return NodeProtocol(self._data["protocol"]).name
+            try:
+                return NodeProtocol(self._data["protocol"]).name
+            except ValueError:
+                log_unknown_value(NodeProtocol, self._data["protocol"])
+
+            return NodeProtocol.NONE.name
 
         return ""
 
@@ -742,14 +814,24 @@ class HomeeWarning:
         return self._data
 
     @property
-    def code(self) -> int:
+    def code(self) -> WarningCode:
         """Return the numerical code of the warning."""
-        return self._data["code"]
+        try:
+            return WarningCode(self._data["code"])
+        except ValueError:
+            log_unknown_value(WarningCode, self._data["code"])
+
+        return WarningCode.NONE
 
     @property
     def code_string(self) -> str:
         """Return the descriptive string for the warning code."""
-        return WarningCode(self._data["code"]).name
+        try:
+            return WarningCode(self._data["code"]).name
+        except ValueError:
+            log_unknown_value(WarningCode, self._data["code"])
+
+        return WarningCode.NONE.name
 
     @property
     def description(self) -> str:
@@ -762,7 +844,7 @@ class HomeeWarning:
         return self._data["message"]
 
     @property
-    def data(self) -> HomeeWarningData:
+    def data(self) -> HomeeWarningData | None:
         """The data collection of the warning. Optional, not on every warning."""
         if "data" in self._data:
             return HomeeWarningData(self._data["data"])
@@ -819,17 +901,32 @@ class HomeeDevice:
     @property
     def os(self) -> DeviceOS:
         """Return the operating system of the device."""
-        return DeviceOS(self._data["os"])
+        try:
+            return DeviceOS(self._data["os"])
+        except ValueError:
+            log_unknown_value(DeviceOS, self._data["os"])
+
+        return DeviceOS.NONE
 
     @property
     def type(self) -> DeviceType:
         """Return the type of the device."""
-        return DeviceType(self._data["type"])
+        try:
+            return DeviceType(self._data["type"])
+        except ValueError:
+            log_unknown_value(DeviceType, self._data["type"])
+
+        return DeviceType.NONE
 
     @property
     def app(self) -> DeviceApp:
         """Return the app version of the device."""
-        return DeviceApp(self._data["app"])
+        try:
+            return DeviceApp(self._data["app"])
+        except ValueError:
+            log_unknown_value(DeviceApp, self._data["app"])
+
+        return DeviceApp.NONE
 
     @property
     def connected(self) -> bool:
@@ -886,7 +983,12 @@ class HomeeUser:
     @property
     def role(self) -> UserRole:
         """Return the role of the user."""
-        return self._data["role"]
+        try:
+            return UserRole(self._data["role"])
+        except ValueError:
+            log_unknown_value(UserRole, self._data["role"])
+
+        return UserRole.NONE
 
     @property
     def type(self) -> int:
