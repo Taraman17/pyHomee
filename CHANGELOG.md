@@ -2,6 +2,23 @@
 
 
 
+## v1.2.8 (2025-03-16)
+
+### Fix
+
+* fix: add MULTILEVEL_INPUT to AttributeType ([`514146a`](https://github.com/Taraman17/pyHomee/commit/514146a001ab83f426b75b4d452da88609d4d3a8))
+
+* fix: typing for `return None` ([`2541220`](https://github.com/Taraman17/pyHomee/commit/25412203b353c59a80b3292b8ddd411840efdcf0))
+
+* fix: Error handling for unknown enum values ([`d8d06ba`](https://github.com/Taraman17/pyHomee/commit/d8d06bae3ee0a34398687cac89d1875e0b8ba59b))
+
+### Unknown
+
+* Merge pull request #33 from Taraman17/dev
+
+Release 1.2.8 ([`b5ffa10`](https://github.com/Taraman17/pyHomee/commit/b5ffa10a3a9bb61b52867d91cbf1ce193fe5d2dc))
+
+
 ## v1.2.7 (2025-02-10)
 
 ### Fix
