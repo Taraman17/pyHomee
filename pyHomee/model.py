@@ -230,7 +230,7 @@ class HomeeAttribute:
         return self._data["data"]
 
     @property
-    def options(self) -> HomeeAttributeOptions:
+    def options(self) -> HomeeAttributeOptions | None:
         """The options collection of the attribute. Optional, not on every attribute."""
         if "options" in self._data:
             return HomeeAttributeOptions(self._data["options"])
@@ -844,7 +844,7 @@ class HomeeWarning:
         return self._data["message"]
 
     @property
-    def data(self) -> HomeeWarningData:
+    def data(self) -> HomeeWarningData | None:
         """The data collection of the warning. Optional, not on every warning."""
         if "data" in self._data:
             return HomeeWarningData(self._data["data"])
