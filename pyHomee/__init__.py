@@ -483,7 +483,7 @@ class Homee:
         """Return the index of the node with the given id or -1 if none exists."""
         return next((i for i, node in enumerate(self.nodes) if node.id == node_id), -1)
 
-    def get_node_by_id(self, node_id: int) -> HomeeNode:
+    def get_node_by_id(self, node_id: int) -> HomeeNode | None:
         """Return the node with the given id or 'None' if none exists."""
         index = self.get_node_index(node_id)
         return self.nodes[index] if index != -1 else None
@@ -499,12 +499,12 @@ class Homee:
         index = self.get_group_index(group_id)
         return self.groups[index] if index != -1 else None
 
-    def get_user_by_id(self, user_id: int) -> HomeeUser:
+    def get_user_by_id(self, user_id: int) -> HomeeUser | None:
         """Return the user with the given id or 'None' if no user with the given id exists."""
         index = next((i for i, user in enumerate(self.users) if user.id == user_id), -1)
         return self.users[index] if index != -1 else None
 
-    def get_device_by_id(self, device_id: int) -> HomeeDevice:
+    def get_device_by_id(self, device_id: int) -> HomeeDevice | None:
         """Return the device with the given id or 'None' if no device with the given id exists."""
         index = next(
             (i for i, device in enumerate(self.devices) if device.id == device_id), -1
