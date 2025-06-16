@@ -62,11 +62,11 @@ class Homee:
         self.groups: list[HomeeGroup] = []
         self.nodes: list[HomeeNode] = []
         self.relationships: list[HomeeRelationship] = []
-        self.settings: HomeeSettings = None
+        self.settings: HomeeSettings
         self.users: list[HomeeUser] = []
-        self.warning: HomeeWarning = None
+        self.warning: HomeeWarning | None = None
         self.token: str = ""
-        self.expires: int = 0
+        self.expires: float = 0
         self.connected: bool = False
         self.retries: int = 0
         self.should_close: bool = False
@@ -101,7 +101,7 @@ class Homee:
 
         try:
             req = await client.post(
-                url, auth=auth, data=data, headers=headers, timeout=5
+                url, auth=auth, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=5)
             )
         except asyncio.TimeoutError as e:
             await client.close()
@@ -112,23 +112,28 @@ class Homee:
 
         try:
             req_text = await req.text()
-            if req.status == 200:
-                regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
-                matches = re.match(regex, req_text)
-
-                self.token = matches[1]
-                self.expires = datetime.now().timestamp() + int(matches[2])
-
-                self.retries = 0
-            else:
-                await client.close()
-                raise HomeeAuthFailedException(
-                    f"Did not get a valid token: {req.reason}"
-                )
-
         except aiohttp.client_exceptions.ClientError as e:
             await client.close()
             raise HomeeAuthFailedException(f"Client error: {e.__cause__}") from e
+
+        if req.status == 200:
+            regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
+            matches = re.match(regex, req_text)
+        else:
+            raise HomeeAuthFailedException(
+                f"Auth request was unsuccessful. Status: {req.status} - {req.reason}"
+            )
+
+        if matches is not None and len(matches.groups()) == 2:
+            self.token = matches[1]
+            self.expires = datetime.now().timestamp() + float(matches[2])
+
+            self.retries = 0
+        else:
+            await client.close()
+            raise HomeeAuthFailedException(
+                f"Did not get a valid token: {req.reason}"
+            )
 
         await client.close()
         return self.token
@@ -190,7 +195,7 @@ class Homee:
         try:
             async with websockets.asyncio.client.connect(
                 uri=f"{self.ws_url}/connection?access_token={self.token}",
-                subprotocols=["v2"],
+                subprotocols=[websockets.Subprotocol("v2")],
             ) as ws:
                 await self._ws_on_open()
 
@@ -205,7 +210,7 @@ class Homee:
                             return_when=asyncio.FIRST_COMPLETED,
                         )
 
-                        exceptions = []
+                        exceptions: list[BaseException | None] = []
 
                         # Kill pending tasks
                         for task in pending:
@@ -234,7 +239,7 @@ class Homee:
         self, ws: websockets.asyncio.client.ClientConnection
     ) -> None:
         try:
-            msg = await ws.recv()
+            msg = await ws.recv(decode=True)
             await self._ws_on_message(msg)
         except websockets.exceptions.ConnectionClosedOK:
             return
@@ -306,12 +311,12 @@ class Homee:
         self.should_close = True
 
     def add_connection_listener(
-        self, listener: Callable[[bool], None]
+        self, listener: Callable[[bool], Coroutine[Any, Any, None]]
     ) -> Callable[[], None]:
         """Add a listener for change in connected state."""
         self._connection_listeners.append(listener)
 
-        def remove_listener():
+        def remove_listener() -> None:
             self._connection_listeners.remove(listener)
 
         return remove_listener
@@ -420,7 +425,7 @@ class Homee:
             self._remap_relationships()
 
     def _update_or_create_relationship(self, data: dict) -> None:
-        relationship: HomeeRelationship = next(
+        relationship: HomeeRelationship | None = next(
             (r for r in self.relationships if r.id == data["id"]), None
         )
 
@@ -485,7 +490,7 @@ class Homee:
         """Return the index of the node with the given id or -1 if none exists."""
         return next((i for i, node in enumerate(self.nodes) if node.id == node_id), -1)
 
-    def get_node_by_id(self, node_id: int) -> HomeeNode:
+    def get_node_by_id(self, node_id: int) -> HomeeNode | None:
         """Return the node with the given id or 'None' if none exists."""
         index = self.get_node_index(node_id)
         return self.nodes[index] if index != -1 else None
@@ -496,17 +501,17 @@ class Homee:
             (i for i, group in enumerate(self.groups) if group.id == group_id), -1
         )
 
-    def get_group_by_id(self, group_id: int) -> HomeeGroup:
+    def get_group_by_id(self, group_id: int) -> HomeeGroup | None:
         """Return the group with the given id or 'None' if no group with the given id exists."""
         index = self.get_group_index(group_id)
         return self.groups[index] if index != -1 else None
 
-    def get_user_by_id(self, user_id: int) -> HomeeUser:
+    def get_user_by_id(self, user_id: int) -> HomeeUser | None:
         """Return the user with the given id or 'None' if no user with the given id exists."""
         index = next((i for i, user in enumerate(self.users) if user.id == user_id), -1)
         return self.users[index] if index != -1 else None
 
-    def get_device_by_id(self, device_id: int) -> HomeeDevice:
+    def get_device_by_id(self, device_id: int) -> HomeeDevice | None:
         """Return the device with the given id or 'None' if no device with the given id exists."""
         index = next(
             (i for i, device in enumerate(self.devices) if device.id == device_id), -1
@@ -609,7 +614,7 @@ class Homee:
 
     async def on_error(self, error: Exception | None = None) -> None:
         """Execute after an error has occurred."""
-        _LOGGER.info("An error occurred: %s", error.__cause__)
+        _LOGGER.info("An error occurred: %s", getattr(error, "__cause__", "unknown"))
 
     async def on_message(self, msg: dict) -> None:
         """Execute when the websocket receives a message.
@@ -630,7 +635,7 @@ class Homee:
 class HomeeException(Exception):
     """Base class for all errors thrown by this library."""
 
-    def __init__(self, reason) -> None:
+    def __init__(self, reason: str | None = None) -> None:
         self.reason = reason
 
 
