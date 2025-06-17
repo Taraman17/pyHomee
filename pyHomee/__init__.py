@@ -578,7 +578,7 @@ class Homee:
     async def on_connected(self) -> None:
         """Execute once the websocket connection has been established."""
         for listener in self._connection_listeners:
-            listener(True)
+            await listener(True)
         if self.retries > 0:
             _LOGGER.debug(
                 "Homee %s Reconnected after %s retries", self.device, self.retries
@@ -588,7 +588,7 @@ class Homee:
         """Execute after the websocket connection has been closed."""
         if not self.should_close:
             for listener in self._connection_listeners:
-                listener(False)
+                await listener(False)
 
             _LOGGER.info("Homee %s Disconnected. Error: %s", self.device, error)
 
