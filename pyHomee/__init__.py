@@ -1,5 +1,7 @@
 """Library for interacting with the homee smart home/home automation platform."""
 
+import os
+
 import asyncio
 from collections.abc import Callable, Coroutine
 from datetime import datetime
@@ -25,8 +27,6 @@ from .model import (
     HomeeUser,
     HomeeWarning,
 )
-
-import os
 
 _LOGGER = logging.getLogger(__name__)
 
