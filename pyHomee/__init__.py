@@ -120,6 +120,7 @@ class Homee:
             regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
             matches = re.match(regex, req_text)
         else:
+            await client.close()
             raise HomeeAuthFailedException(
                 f"Auth request was unsuccessful. Status: {req.status} - {req.reason}"
             )
@@ -165,10 +166,15 @@ class Homee:
 
             try:
                 await self.get_access_token()
-            except HomeeAuthFailedException as e:
-                _LOGGER.debug("Could not authenticate with Homee: %s", e)
+            except HomeeConnectionFailedException as e:
+                _LOGGER.debug("Could not connect to Homee: %s", e)
                 # Reconnect
                 self.retries += 1
+                continue
+            except HomeeAuthFailedException as e:
+                _LOGGER.debug("Could not authenticate with Homee: %s", e)
+                # Do not reconnect, since the authentication will not magically work.
+                self.should_reconnect = False
                 continue
 
             await self.open_ws()
@@ -268,8 +274,6 @@ class Homee:
         self.connected = True
 
         await self.on_connected()
-        self.retries = 0
-
         await self.send("GET:all")
 
     async def _ws_on_message(self, msg: str) -> None:
@@ -328,9 +332,9 @@ class Homee:
 
         try:
             msg_type = list(msg)[0]
-        except TypeError:
+        except TypeError as e:
             _LOGGER.info("Invalid message: %s", msg)
-            await self.on_error()
+            await self.on_error(e)
             return
 
         _LOGGER.debug(msg)
@@ -585,6 +589,7 @@ class Homee:
             _LOGGER.debug(
                 "Homee %s Reconnected after %s retries", self.device, self.retries
             )
+            self.retries = 0
 
         # mock code
         path = "/workspaces/temp/pymee/mock"
@@ -614,7 +619,7 @@ class Homee:
 
     async def on_error(self, error: Exception | None = None) -> None:
         """Execute after an error has occurred."""
-        _LOGGER.info("An error occurred: %s", getattr(error, "__cause__", "unknown"))
+        _LOGGER.info("An error occurred: %s", error)
 
     async def on_message(self, msg: dict) -> None:
         """Execute when the websocket receives a message.
