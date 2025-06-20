@@ -164,10 +164,15 @@ class Homee:
 
             try:
                 await self.get_access_token()
-            except HomeeAuthFailedException as e:
-                _LOGGER.debug("Could not authenticate with Homee: %s", e)
+            except HomeeConnectionFailedException as e:
+                _LOGGER.debug("Could not connect to Homee: %s", e)
                 # Reconnect
                 self.retries += 1
+                continue
+            except HomeeAuthFailedException as e:
+                _LOGGER.debug("Could not authenticate with Homee: %s", e)
+                # Do not reconnect, since the authentication will not magically work.
+                self.should_reconnect = False
                 continue
 
             await self.open_ws()
