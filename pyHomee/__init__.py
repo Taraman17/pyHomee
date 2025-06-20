@@ -599,7 +599,7 @@ class Homee:
 
     async def on_error(self, error: Exception | None = None) -> None:
         """Execute after an error has occurred."""
-        _LOGGER.info("An error occurred: %s", getattr(error, "__cause__", "unknown"))
+        _LOGGER.info("An error occurred: %s", error)
 
     async def on_message(self, msg: dict) -> None:
         """Execute when the websocket receives a message.
