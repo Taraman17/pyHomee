@@ -272,8 +272,6 @@ class Homee:
         self.connected = True
 
         await self.on_connected()
-        self.retries = 0
-
         await self.send("GET:all")
 
     async def _ws_on_message(self, msg: str) -> None:
@@ -589,6 +587,7 @@ class Homee:
             _LOGGER.debug(
                 "Homee %s Reconnected after %s retries", self.device, self.retries
             )
+            self.retries = 0
 
     async def on_disconnected(self, error: Exception | None = None) -> None:
         """Execute after the websocket connection has been closed."""
