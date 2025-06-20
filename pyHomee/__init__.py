@@ -330,9 +330,9 @@ class Homee:
 
         try:
             msg_type = list(msg)[0]
-        except TypeError:
+        except TypeError as e:
             _LOGGER.info("Invalid message: %s", msg)
-            await self.on_error()
+            await self.on_error(e)
             return
 
         _LOGGER.debug(msg)
