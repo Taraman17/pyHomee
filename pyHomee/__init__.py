@@ -118,6 +118,7 @@ class Homee:
             regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
             matches = re.match(regex, req_text)
         else:
+            await client.close()
             raise HomeeAuthFailedException(
                 f"Auth request was unsuccessful. Status: {req.status} - {req.reason}"
             )
