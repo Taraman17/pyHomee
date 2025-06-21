@@ -7,6 +7,7 @@ import hashlib
 import json
 import logging
 import re
+from urllib.parse import parse_qs
 from typing import Any, Literal
 
 import aiohttp
@@ -124,22 +125,19 @@ class Homee:
             raise HomeeAuthFailedException(f"Client error: {e.__cause__}") from e
 
         if req.status == 200:
-            regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
-            matches = re.match(regex, req_text)
+            try:
+                parsed = parse_qs(req_text, strict_parsing=True)
+                self.token = parsed["access_token"][0]
+                expires = int(parsed["expires"][0])
+                self.expires = datetime.now().timestamp() + expires
+                self.retries = 0
+            except (KeyError, IndexError, ValueError) as e:
+                raise HomeeAuthFailedException(f"Invalid token format: {req_text}") from e
         else:
             await client.close()
             raise HomeeAuthFailedException(
                 f"Auth request was unsuccessful. Status: {req.status} - {req.reason}"
             )
-
-        if matches is not None and len(matches.groups()) == 2:
-            self.token = matches[1]
-            self.expires = datetime.now().timestamp() + float(matches[2])
-
-            self.retries = 0
-        else:
-            await client.close()
-            raise HomeeAuthFailedException(f"Did not get a valid token: {req.reason}")
 
         await client.close()
         return self.token
