@@ -99,7 +99,11 @@ class Homee:
 
         try:
             req = await client.post(
-                url, auth=auth, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=5)
+                url,
+                auth=auth,
+                data=data,
+                headers=headers,
+                timeout=aiohttp.ClientTimeout(total=5),
             )
         except asyncio.TimeoutError as e:
             await client.close()
@@ -110,7 +114,12 @@ class Homee:
 
         try:
             req_text = await req.text()
-        except aiohttp.client_exceptions.ClientError as e:
+        except (
+            aiohttp.ClientError,
+            asyncio.TimeoutError,
+            UnicodeDecodeError,
+            LookupError,
+        ) as e:
             await client.close()
             raise HomeeAuthFailedException(f"Client error: {e.__cause__}") from e
 
@@ -130,9 +139,7 @@ class Homee:
             self.retries = 0
         else:
             await client.close()
-            raise HomeeAuthFailedException(
-                f"Did not get a valid token: {req.reason}"
-            )
+            raise HomeeAuthFailedException(f"Did not get a valid token: {req.reason}")
 
         await client.close()
         return self.token
