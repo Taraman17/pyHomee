@@ -84,7 +84,6 @@ class Homee:
         if self.token is not None and self.expires > datetime.now().timestamp():
             return self.token
 
-        client = aiohttp.ClientSession()
         auth = BasicAuth(
             self.user, hashlib.sha512(self.password.encode("utf-8")).hexdigest()
         )
@@ -99,30 +98,30 @@ class Homee:
         }
 
         try:
-            req = await client.post(
-                url,
-                auth=auth,
-                data=data,
-                headers=headers,
-                timeout=aiohttp.ClientTimeout(total=5),
-            )
+            async with aiohttp.ClientSession() as client:
+                req = await client.post(
+                    url,
+                    auth=auth,
+                    data=data,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=5),
+                )
+
+                try:
+                    req_text = await req.text()
+                except (
+                    aiohttp.client_exceptions.ClientError,
+                    asyncio.TimeoutError,
+                    UnicodeDecodeError,
+                    LookupError,
+                ) as e:
+                    raise HomeeAuthFailedException(
+                        f"Failed to decode response: {e}"
+                    ) from e
         except asyncio.TimeoutError as e:
-            await client.close()
             raise HomeeConnectionFailedException("Connection to Homee timed out") from e
         except aiohttp.client_exceptions.ClientError as e:
-            await client.close()
             raise HomeeConnectionFailedException("Could not connect to Homee") from e
-
-        try:
-            req_text = await req.text()
-        except (
-            aiohttp.ClientError,
-            asyncio.TimeoutError,
-            UnicodeDecodeError,
-            LookupError,
-        ) as e:
-            await client.close()
-            raise HomeeAuthFailedException(f"Client error: {e.__cause__}") from e
 
         if req.status == 200:
             try:
@@ -132,14 +131,14 @@ class Homee:
                 self.expires = datetime.now().timestamp() + expires
                 self.retries = 0
             except (KeyError, IndexError, ValueError) as e:
-                raise HomeeAuthFailedException(f"Invalid token format: {req_text}") from e
+                raise HomeeAuthFailedException(
+                    f"Invalid token format: {req_text}"
+                ) from e
         else:
-            await client.close()
             raise HomeeAuthFailedException(
                 f"Auth request was unsuccessful. Status: {req.status} - {req.reason}"
             )
 
-        await client.close()
         return self.token
 
     async def run(self) -> None:
