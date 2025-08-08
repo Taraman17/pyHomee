@@ -1,11 +1,16 @@
 """Fixtures for pyHomee tests."""
 
+from unittest.mock import patch
 import pytest
+import websockets
+from websockets.exceptions import ConnectionClosedOK
+
+
 
 from pyHomee import Homee
 
 
-HOMEE_IP = "192.168.1.1"
+HOMEE_IP = "127.0.0.1"
 HOMEE_USER = "homee_user"
 HOMEE_PASSWORD = "homee_password"
 HOMEE_DEVICE_ID = "testdevice"
@@ -26,3 +31,32 @@ def test_homee() -> Homee:
         reconnect_interval=RECONNECT_INTERVAL,
         max_retries=MAX_RETRIES,
     )
+
+
+@pytest.fixture
+async def mock_get_access_token():
+    """Mock the get_access_token method of the Homee instance."""
+    with patch (
+        "pyHomee.Homee.get_access_token",
+        return_value=TEST_TOKEN,
+    ) as mock_method:
+        yield mock_method
+
+
+@pytest.fixture
+async def websocket_server():
+    """Fixture that runs a test WebSocket server in the background."""
+    clients = []
+
+    async def echo_handler(ws):
+        clients.append(ws)
+        try:
+            async for message in ws:
+                await ws.send(message)  # echo back
+        except ConnectionClosedOK:
+            pass
+
+    server = await websockets.serve(echo_handler, "localhost", 8765, subprotocols=["v2"])
+    yield server
+    server.close()
+    await server.wait_closed()

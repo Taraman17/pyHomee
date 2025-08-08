@@ -10,20 +10,12 @@ from .conftest import (
     MAX_RETRIES
 )
 
-def test_initialize_homee() -> None:
+def test_initialize_homee(test_homee: Homee) -> None:
     """Test that Homee can be initialized correctly."""
-    homee = Homee(
-        host=HOMEE_IP,
-        user=HOMEE_USER,
-        password=HOMEE_PASSWORD,
-        device=HOMEE_DEVICE_ID,
-        reconnect_interval=RECONNECT_INTERVAL,
-        max_retries=MAX_RETRIES,
-    )
-    assert homee.host == HOMEE_IP
-    assert homee.user == HOMEE_USER
-    assert homee.password == HOMEE_PASSWORD
-    assert homee.device == HOMEE_DEVICE_ID
-    assert homee.reconnect_interval == RECONNECT_INTERVAL
-    assert homee.max_retries == MAX_RETRIES
-    assert not homee.connected
+    assert test_homee.host == HOMEE_IP
+    assert test_homee.user == HOMEE_USER
+    assert test_homee.password == HOMEE_PASSWORD
+    assert test_homee.device == HOMEE_DEVICE_ID
+    assert test_homee.reconnect_interval == RECONNECT_INTERVAL
+    assert test_homee.max_retries == MAX_RETRIES
+    assert not test_homee.connected
