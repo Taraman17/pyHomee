@@ -76,6 +76,7 @@ class Homee:
         self._connection_listeners: list[
             Callable[[bool], Coroutine[Any, Any, None]]
         ] = []
+        self._warning_listeners: list[Callable[[HomeeWarning], Coroutine[Any, Any, None]]] = []
 
     async def get_access_token(self) -> str:
         """Try asynchronously to get an access token from homee using username and password."""

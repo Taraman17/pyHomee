@@ -103,7 +103,7 @@ class HomeeAttribute:
     def __init__(self, data: dict[str, Any]) -> None:
         """Initialize the attribute."""
         self._data = data
-        self._on_changed_listeners: list[Callable] = []
+        self.on_changed_listeners: list[Callable] = []
 
     @property
     def raw_data(self) -> dict[str, Any]:
@@ -249,10 +249,10 @@ class HomeeAttribute:
         self, listener: Callable[[Self], None]
     ) -> Callable[[], None]:
         """Add on_changed listener to attribute."""
-        self._on_changed_listeners.append(listener)
+        self.on_changed_listeners.append(listener)
 
         def remove_listener() -> None:
-            self._on_changed_listeners.remove(listener)
+            self.on_changed_listeners.remove(listener)
 
         return remove_listener
 
@@ -260,7 +260,7 @@ class HomeeAttribute:
         """Update data of the attribute."""
         self._data = data
 
-        for listener in self._on_changed_listeners:
+        for listener in self.on_changed_listeners:
             listener(self)
 
     def get_value(self) -> float | str:
@@ -285,7 +285,7 @@ class HomeeNode:
             self.attributes.append(new_attribute)
         self._attribute_map: dict[AttributeType, HomeeAttribute] = {}
         self.remap_attributes()
-        self._on_changed_listeners: list[Callable] = []
+        self.on_changed_listeners: list[Callable] = []
         self.groups: list[HomeeGroup] = []
 
     @property
@@ -404,7 +404,7 @@ class HomeeNode:
 
         self.update_attributes(self._data["attributes"])
 
-        for listener in self._on_changed_listeners:
+        for listener in self.on_changed_listeners:
             listener(self)
 
     def get_attribute_index(self, attribute_id: int) -> int:
@@ -434,17 +434,17 @@ class HomeeNode:
         return self.attributes[index] if index != -1 else None
 
     def _on_attribute_changed(self, attribute: HomeeAttribute) -> None:
-        for listener in self._on_changed_listeners:
+        for listener in self.on_changed_listeners:
             listener(self)
 
     def add_on_changed_listener(
         self, listener: Callable[[Self], None]
     ) -> Callable[[], None]:
         """Add on_changed listener to node."""
-        self._on_changed_listeners.append(listener)
+        self.on_changed_listeners.append(listener)
 
         def remove_listener() -> None:
-            self._on_changed_listeners.remove(listener)
+            self.on_changed_listeners.remove(listener)
 
         return remove_listener
 
@@ -472,7 +472,7 @@ class HomeeGroup:
     def __init__(self, data: dict[str, Any]) -> None:
         """Initialize a Homee group."""
         self._data = data
-        self._on_changed_listeners: list[Callable] = []
+        self.on_changed_listeners: list[Callable] = []
         self.nodes: list[HomeeNode] = []
 
     @property
@@ -531,10 +531,10 @@ class HomeeGroup:
         self, listener: Callable[[Self], None]
     ) -> Callable[[], None]:
         """Add on_changed listener to group."""
-        self._on_changed_listeners.append(listener)
+        self.on_changed_listeners.append(listener)
 
         def remove_listener() -> None:
-            self._on_changed_listeners.remove(listener)
+            self.on_changed_listeners.remove(listener)
 
         return remove_listener
 
@@ -542,7 +542,7 @@ class HomeeGroup:
         """Update data of the group."""
         self._data = data
 
-        for listener in self._on_changed_listeners:
+        for listener in self.on_changed_listeners:
             listener(self)
 
 
@@ -552,7 +552,7 @@ class HomeeSettings:
     def __init__(self, data: dict) -> None:
         """Initialize settings."""
         self._data = data
-        self._on_changed_listeners: list[Callable] = []
+        self.on_changed_listeners: list[Callable] = []
 
     @property
     def raw_data(self) -> dict[str, Any]:
@@ -708,10 +708,10 @@ class HomeeSettings:
         self, listener: Callable[[Self], None]
     ) -> Callable[[], None]:
         """Add on_changed listener to group."""
-        self._on_changed_listeners.append(listener)
+        self.on_changed_listeners.append(listener)
 
         def remove_listener() -> None:
-            self._on_changed_listeners.remove(listener)
+            self.on_changed_listeners.remove(listener)
 
         return remove_listener
 
@@ -719,7 +719,7 @@ class HomeeSettings:
         """Update data of the settings object."""
         self._data = data
 
-        for listener in self._on_changed_listeners:
+        for listener in self.on_changed_listeners:
             listener(self)
 
 
@@ -729,6 +729,7 @@ class HomeeRelationship:
     def __init__(self, data: dict[str, Any]) -> None:
         """Initialize the relationship."""
         self._data = data
+        self.on_changed_listeners: list[Callable] = []
 
     @property
     def id(self) -> int:
@@ -754,6 +755,19 @@ class HomeeRelationship:
     def set_data(self, data: dict[str, Any]) -> None:
         """Update data of the relationship."""
         self._data = data
+        for listener in self.on_changed_listeners:
+            listener(self)
+
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
+        """Add on_changed listener to node."""
+        self.on_changed_listeners.append(listener)
+
+        def remove_listener() -> None:
+            self.on_changed_listeners.remove(listener)
+
+        return remove_listener
 
 
 class HomeeWarningData:
@@ -804,6 +818,7 @@ class HomeeWarning:
     def __init__(self, data: dict[str, Any]) -> None:
         """Initialize the warning."""
         self._data = data
+        self.on_changed_listeners: list[Callable] = []
 
     @property
     def raw_data(self) -> dict[str, Any]:
@@ -851,6 +866,19 @@ class HomeeWarning:
     def set_data(self, data: dict[str, Any]) -> None:
         """Update data of the warning."""
         self._data = data
+        for listener in self.on_changed_listeners:
+            listener(self)
+
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
+        """Add on_changed listener to node."""
+        self.on_changed_listeners.append(listener)
+
+        def remove_listener() -> None:
+            self.on_changed_listeners.remove(listener)
+
+        return remove_listener
 
 
 class HomeeDevice:
@@ -859,6 +887,7 @@ class HomeeDevice:
     def __init__(self, data: dict) -> None:
         """Initialize the device."""
         self._data = data
+        self.on_changed_listeners: list[Callable] = []
 
     @property
     def raw_data(self) -> dict[str, Any]:
@@ -938,6 +967,19 @@ class HomeeDevice:
     def set_data(self, data: dict[str, Any]) -> None:
         """Update data of the device"""
         self._data = data
+        for listener in self.on_changed_listeners:
+            listener(self)
+
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
+        """Add on_changed listener to node."""
+        self.on_changed_listeners.append(listener)
+
+        def remove_listener() -> None:
+            self.on_changed_listeners.remove(listener)
+
+        return remove_listener
 
 
 class HomeeUser:
@@ -946,6 +988,7 @@ class HomeeUser:
     def __init__(self, data: dict[str, Any]) -> None:
         """Initialize the user."""
         self._data = data
+        self.on_changed_listeners: list[Callable] = []
 
     @property
     def raw_data(self) -> dict[str, Any]:
@@ -1159,3 +1202,16 @@ class HomeeUser:
     def set_data(self, data: dict[str, Any]) -> None:
         """Update data of the user"""
         self._data = data
+        for listener in self.on_changed_listeners:
+            listener(self)
+
+    def add_on_changed_listener(
+        self, listener: Callable[[Self], None]
+    ) -> Callable[[], None]:
+        """Add on_changed listener to node."""
+        self.on_changed_listeners.append(listener)
+
+        def remove_listener() -> None:
+            self.on_changed_listeners.remove(listener)
+
+        return remove_listener
