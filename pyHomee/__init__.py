@@ -6,7 +6,6 @@ from datetime import datetime
 import hashlib
 import json
 import logging
-import re
 from urllib.parse import parse_qs
 from typing import Any, Literal
 
@@ -16,7 +15,7 @@ from aiohttp.helpers import BasicAuth
 import websockets.asyncio.client
 import websockets.exceptions
 
-from .const import DeviceApp, DeviceOS, DeviceType
+from .const import DeviceApp, DeviceOS, DeviceType, WarningCode
 from .model import (
     HomeeDevice,
     HomeeGroup,
@@ -63,7 +62,9 @@ class Homee:
         self.relationships: list[HomeeRelationship] = []
         self.settings: HomeeSettings
         self.users: list[HomeeUser] = []
-        self.warning: HomeeWarning | None = None
+        self.warning = HomeeWarning(
+            {'code': 0, 'description': 'None', 'message': 'None', 'data': {}}
+        )
         self.token: str = ""
         self.expires: float = 0
         self.connected: bool = False
@@ -76,7 +77,9 @@ class Homee:
         self._connection_listeners: list[
             Callable[[bool], Coroutine[Any, Any, None]]
         ] = []
-        self._warning_listeners: list[Callable[[HomeeWarning], Coroutine[Any, Any, None]]] = []
+        self._nodes_listeners: list[
+            Callable[[HomeeNode, bool], Coroutine[Any, Any, None]]
+        ] = []
 
     async def get_access_token(self) -> str:
         """Try asynchronously to get an access token from homee using username and password."""
@@ -328,6 +331,17 @@ class Homee:
 
         return remove_listener
 
+    def add_nodes_listener(
+        self, listener: Callable[[HomeeNode, bool], Coroutine[Any, Any, None]]
+    ) -> Callable[[], None]:
+        """Add a listener for node add/delete events."""
+        self._nodes_listeners.append(listener)
+
+        def remove_listener() -> None:
+            self._nodes_listeners.remove(listener)
+
+        return remove_listener
+
     async def _handle_message(self, msg: dict) -> None:
         """Handle incoming homee messages."""
 
@@ -346,13 +360,13 @@ class Homee:
             self.settings = HomeeSettings(msg["all"]["settings"])
 
             # Create / Update nodes
-            if len(self.nodes) <= 0:
+            if not self.nodes:
                 # Since there might be lots of nodes, we don't want to check for
                 # all in the next step, so if we start up, just add all nodes.
                 self.nodes = [HomeeNode(node_data) for node_data in msg["all"]["nodes"]]
             else:
                 for node_data in msg["all"]["nodes"]:
-                    self._update_or_create_node(node_data)
+                    self._update_or_create_node(node_data, self.warning.code)
 
             # Create / Update groups
             for group_data in msg["all"]["groups"]:
@@ -381,10 +395,10 @@ class Homee:
             for data in msg["groups"]:
                 self._update_or_create_group(data)
         elif msg_type == "node":
-            self._update_or_create_node(msg["node"])
+            self._update_or_create_node(msg["node"], self.warning.code)
         elif msg_type == "nodes":
             for data in msg["nodes"]:
-                self._update_or_create_node(data)
+                self._update_or_create_node(data, self.warning.code)
         elif msg_type == "relationship":
             self._update_or_create_relationship(msg["relationship"])
         elif msg_type == "relationships":
@@ -415,8 +429,25 @@ class Homee:
             node.update_attribute(attribute_data)
             await self.on_attribute_updated(attribute_data, node)
 
-    def _update_or_create_node(self, node_data: dict) -> None:
+    def _update_or_create_node(
+        self, node_data: dict, warning_code: WarningCode
+    ) -> None:
         existing_node = self.get_node_by_id(node_data["id"])
+        if (
+            existing_node is not None
+            and not node_data["attributes"]
+            and warning_code == WarningCode.CUBE_REMOVE_MODE_STARTED
+        ):
+            # A node without attributes is deleted. checking for remove mode for security.
+            _LOGGER.debug(
+                "Node %s has no attributes and cube remove mode is active. Removing",
+                existing_node.id,
+            )
+            self.nodes.remove(existing_node)
+            self._remap_relationships()
+            for listener in self._nodes_listeners:
+                asyncio.create_task(listener(existing_node, False))
+            return
         if existing_node is not None:
             existing_node.set_data(node_data)
         else:
@@ -490,7 +521,7 @@ class Homee:
 
     async def _update_warning(self, data: dict) -> None:
         """Set the warning to the latest one received."""
-        self.warning = HomeeWarning(data)
+        self.warning.set_data(data)
         await self.on_warning()
 
     def get_node_index(self, node_id: int) -> int:
@@ -614,6 +645,10 @@ class Homee:
 
     async def on_warning(self) -> None:
         """Execute when a warning message is received."""
+        if self.warning.code == WarningCode.CUBE_LEARN_MODE_SUCCESSFUL:
+            _LOGGER.debug("Notifying listener of new node %s", self.nodes[-1].id)
+            for listener in self._nodes_listeners:
+                await listener(self.nodes[-1], True)
 
     async def on_attribute_updated(self, attribute_data: dict, node: HomeeNode) -> None:
         """Execute when an 'attribute' message was received and an attribute was updated.
