@@ -366,7 +366,7 @@ class Homee:
                 self.nodes = [HomeeNode(node_data) for node_data in msg["all"]["nodes"]]
             else:
                 for node_data in msg["all"]["nodes"]:
-                    self._update_or_create_node(node_data, self.warning.code)
+                    await self._update_or_create_node(node_data, self.warning.code)
 
             # Create / Update groups
             for group_data in msg["all"]["groups"]:
@@ -395,10 +395,12 @@ class Homee:
             for data in msg["groups"]:
                 self._update_or_create_group(data)
         elif msg_type == "node":
-            self._update_or_create_node(msg["node"], self.warning.code)
+            if self.warning.code != WarningCode.CUBE_LEARN_MODE_STARTED:
+                # In learn mode, incomlete nodes are sent.
+                await self._update_or_create_node(msg["node"], self.warning.code)
         elif msg_type == "nodes":
             for data in msg["nodes"]:
-                self._update_or_create_node(data, self.warning.code)
+                await self._update_or_create_node(data, self.warning.code)
         elif msg_type == "relationship":
             self._update_or_create_relationship(msg["relationship"])
         elif msg_type == "relationships":
@@ -429,7 +431,7 @@ class Homee:
             node.update_attribute(attribute_data)
             await self.on_attribute_updated(attribute_data, node)
 
-    def _update_or_create_node(
+    async def _update_or_create_node(
         self, node_data: dict, warning_code: WarningCode
     ) -> None:
         existing_node = self.get_node_by_id(node_data["id"])
@@ -446,13 +448,16 @@ class Homee:
             self.nodes.remove(existing_node)
             self._remap_relationships()
             for listener in self._nodes_listeners:
-                asyncio.create_task(listener(existing_node, False))
+                await listener(existing_node, False)
             return
         if existing_node is not None:
             existing_node.set_data(node_data)
         else:
             self.nodes.append(HomeeNode(node_data))
             self._remap_relationships()
+            _LOGGER.debug("Notifying listener of new node %s", self.nodes[-1].id)
+            for listener in self._nodes_listeners:
+                await listener(self.nodes[-1], True)
 
     def _update_or_create_group(self, data: dict) -> None:
         group = self.get_group_by_id(data["id"])
@@ -646,9 +651,8 @@ class Homee:
     async def on_warning(self) -> None:
         """Execute when a warning message is received."""
         if self.warning.code == WarningCode.CUBE_LEARN_MODE_SUCCESSFUL:
-            _LOGGER.debug("Notifying listener of new node %s", self.nodes[-1].id)
-            for listener in self._nodes_listeners:
-                await listener(self.nodes[-1], True)
+            # we need to get all nodes again, since there is no way to get the newest only.
+            await self.send("GET:/nodes/")
 
     async def on_attribute_updated(self, attribute_data: dict, node: HomeeNode) -> None:
         """Execute when an 'attribute' message was received and an attribute was updated.
