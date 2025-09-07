@@ -6,7 +6,7 @@ from datetime import datetime
 import hashlib
 import json
 import logging
-import re
+from urllib.parse import parse_qs
 from typing import Any, Literal
 
 import aiohttp
@@ -15,7 +15,7 @@ from aiohttp.helpers import BasicAuth
 import websockets.asyncio.client
 import websockets.exceptions
 
-from .const import DeviceApp, DeviceOS, DeviceType
+from .const import DeviceApp, DeviceOS, DeviceType, WarningCode
 from .model import (
     HomeeDevice,
     HomeeGroup,
@@ -62,7 +62,9 @@ class Homee:
         self.relationships: list[HomeeRelationship] = []
         self.settings: HomeeSettings
         self.users: list[HomeeUser] = []
-        self.warning: HomeeWarning | None = None
+        self.warning = HomeeWarning(
+            {'code': 0, 'description': 'None', 'message': 'None', 'data': {}}
+        )
         self.token: str = ""
         self.expires: float = 0
         self.connected: bool = False
@@ -75,6 +77,9 @@ class Homee:
         self._connection_listeners: list[
             Callable[[bool], Coroutine[Any, Any, None]]
         ] = []
+        self._nodes_listeners: list[
+            Callable[[HomeeNode, bool], Coroutine[Any, Any, None]]
+        ] = []
 
     async def get_access_token(self) -> str:
         """Try asynchronously to get an access token from homee using username and password."""
@@ -83,7 +88,6 @@ class Homee:
         if self.token is not None and self.expires > datetime.now().timestamp():
             return self.token
 
-        client = aiohttp.ClientSession()
         auth = BasicAuth(
             self.user, hashlib.sha512(self.password.encode("utf-8")).hexdigest()
         )
@@ -98,43 +102,47 @@ class Homee:
         }
 
         try:
-            req = await client.post(
-                url, auth=auth, data=data, headers=headers, timeout=aiohttp.ClientTimeout(total=5)
-            )
+            async with aiohttp.ClientSession() as client:
+                req = await client.post(
+                    url,
+                    auth=auth,
+                    data=data,
+                    headers=headers,
+                    timeout=aiohttp.ClientTimeout(total=5),
+                )
+
+                try:
+                    req_text = await req.text()
+                except (
+                    aiohttp.client_exceptions.ClientError,
+                    asyncio.TimeoutError,
+                    UnicodeDecodeError,
+                    LookupError,
+                ) as e:
+                    raise HomeeAuthFailedException(
+                        f"Failed to decode response: {e}"
+                    ) from e
         except asyncio.TimeoutError as e:
-            await client.close()
             raise HomeeConnectionFailedException("Connection to Homee timed out") from e
         except aiohttp.client_exceptions.ClientError as e:
-            await client.close()
             raise HomeeConnectionFailedException("Could not connect to Homee") from e
 
-        try:
-            req_text = await req.text()
-        except aiohttp.client_exceptions.ClientError as e:
-            await client.close()
-            raise HomeeAuthFailedException(f"Client error: {e.__cause__}") from e
-
         if req.status == 200:
-            regex = r"^access_token=([0-z]+)&.*&expires=(\d+)$"
-            matches = re.match(regex, req_text)
+            try:
+                parsed = parse_qs(req_text, strict_parsing=True)
+                self.token = parsed["access_token"][0]
+                expires = int(parsed["expires"][0])
+                self.expires = datetime.now().timestamp() + expires
+                self.retries = 0
+            except (KeyError, IndexError, ValueError) as e:
+                raise HomeeAuthFailedException(
+                    f"Invalid token format: {req_text}"
+                ) from e
         else:
-            await client.close()
             raise HomeeAuthFailedException(
                 f"Auth request was unsuccessful. Status: {req.status} - {req.reason}"
             )
 
-        if matches is not None and len(matches.groups()) == 2:
-            self.token = matches[1]
-            self.expires = datetime.now().timestamp() + float(matches[2])
-
-            self.retries = 0
-        else:
-            await client.close()
-            raise HomeeAuthFailedException(
-                f"Did not get a valid token: {req.reason}"
-            )
-
-        await client.close()
         return self.token
 
     async def run(self) -> None:
@@ -323,6 +331,17 @@ class Homee:
 
         return remove_listener
 
+    def add_nodes_listener(
+        self, listener: Callable[[HomeeNode, bool], Coroutine[Any, Any, None]]
+    ) -> Callable[[], None]:
+        """Add a listener for node add/delete events."""
+        self._nodes_listeners.append(listener)
+
+        def remove_listener() -> None:
+            self._nodes_listeners.remove(listener)
+
+        return remove_listener
+
     async def _handle_message(self, msg: dict) -> None:
         """Handle incoming homee messages."""
 
@@ -341,13 +360,13 @@ class Homee:
             self.settings = HomeeSettings(msg["all"]["settings"])
 
             # Create / Update nodes
-            if len(self.nodes) <= 0:
+            if not self.nodes:
                 # Since there might be lots of nodes, we don't want to check for
                 # all in the next step, so if we start up, just add all nodes.
                 self.nodes = [HomeeNode(node_data) for node_data in msg["all"]["nodes"]]
             else:
                 for node_data in msg["all"]["nodes"]:
-                    self._update_or_create_node(node_data)
+                    await self._update_or_create_node(node_data, self.warning.code)
 
             # Create / Update groups
             for group_data in msg["all"]["groups"]:
@@ -376,10 +395,12 @@ class Homee:
             for data in msg["groups"]:
                 self._update_or_create_group(data)
         elif msg_type == "node":
-            self._update_or_create_node(msg["node"])
+            if self.warning.code != WarningCode.CUBE_LEARN_MODE_STARTED:
+                # In learn mode, incomlete nodes are sent.
+                await self._update_or_create_node(msg["node"], self.warning.code)
         elif msg_type == "nodes":
             for data in msg["nodes"]:
-                self._update_or_create_node(data)
+                await self._update_or_create_node(data, self.warning.code)
         elif msg_type == "relationship":
             self._update_or_create_relationship(msg["relationship"])
         elif msg_type == "relationships":
@@ -410,13 +431,33 @@ class Homee:
             node.update_attribute(attribute_data)
             await self.on_attribute_updated(attribute_data, node)
 
-    def _update_or_create_node(self, node_data: dict) -> None:
+    async def _update_or_create_node(
+        self, node_data: dict, warning_code: WarningCode
+    ) -> None:
         existing_node = self.get_node_by_id(node_data["id"])
+        if (
+            existing_node is not None
+            and not node_data["attributes"]
+            and warning_code == WarningCode.CUBE_REMOVE_MODE_STARTED
+        ):
+            # A node without attributes is deleted. checking for remove mode for security.
+            _LOGGER.debug(
+                "Node %s has no attributes and cube remove mode is active. Removing",
+                existing_node.id,
+            )
+            self.nodes.remove(existing_node)
+            self._remap_relationships()
+            for listener in self._nodes_listeners:
+                await listener(existing_node, False)
+            return
         if existing_node is not None:
             existing_node.set_data(node_data)
         else:
             self.nodes.append(HomeeNode(node_data))
             self._remap_relationships()
+            _LOGGER.debug("Notifying listener of new node %s", self.nodes[-1].id)
+            for listener in self._nodes_listeners:
+                await listener(self.nodes[-1], True)
 
     def _update_or_create_group(self, data: dict) -> None:
         group = self.get_group_by_id(data["id"])
@@ -485,7 +526,7 @@ class Homee:
 
     async def _update_warning(self, data: dict) -> None:
         """Set the warning to the latest one received."""
-        self.warning = HomeeWarning(data)
+        self.warning.set_data(data)
         await self.on_warning()
 
     def get_node_index(self, node_id: int) -> int:
@@ -609,6 +650,9 @@ class Homee:
 
     async def on_warning(self) -> None:
         """Execute when a warning message is received."""
+        if self.warning.code == WarningCode.CUBE_LEARN_MODE_SUCCESSFUL:
+            # we need to get all nodes again, since there is no way to get the newest only.
+            await self.send("GET:/nodes/")
 
     async def on_attribute_updated(self, attribute_data: dict, node: HomeeNode) -> None:
         """Execute when an 'attribute' message was received and an attribute was updated.
