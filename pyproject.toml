@@ -35,4 +35,4 @@ upload_to_release = true
 include-package-data = false
 
 [tool.setuptools.packages.find]
-exclude = ["tests*", "test*"]
+exclude = ["tests*"]
