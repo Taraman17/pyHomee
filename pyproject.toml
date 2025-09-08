@@ -31,10 +31,8 @@ commit_parser = "conventional"
 upload_to_PyPI = true
 upload_to_release = true
 
-[tool.semantic_release.changelog.default_templates]
-changelog_file = "CHANGELOG.md"
-output_format = "md"
-
 [tool.setuptools]
-packages = ["pyHomee"]
 include-package-data = false
+
+[tool.setuptools.packages.find]
+exclude = ["tests*", "test*"]
