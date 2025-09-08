@@ -21,7 +21,7 @@ classifiers=[
 Repository = "https://github.com/Taraman17/pyHomee"
 
 [build-system]
-requires = ["setuptools >= 77.0.3"]
+requires = ["setuptools >= 80.0.0"]
 build-backend = "setuptools.build_meta"
 
 [tool.semantic_release]
@@ -36,7 +36,5 @@ changelog_file = "CHANGELOG.md"
 output_format = "md"
 
 [tool.setuptools]
+packages = ["pyHomee"]
 include-package-data = false
-
-[tool.setuptools.packages.find]
-exclude = [ "tests*"]
