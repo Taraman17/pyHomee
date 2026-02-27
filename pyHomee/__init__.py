@@ -210,6 +210,8 @@ class Homee:
             async with websockets.asyncio.client.connect(
                 uri=f"{self.ws_url}/connection?access_token={self.token}",
                 subprotocols=[websockets.Subprotocol("v2")],
+                # homee sends a large "all" dump; avoid default limit
+                max_size=None,
             ) as ws:
                 await self._ws_on_open()
 
@@ -377,6 +379,10 @@ class Homee:
             # Create / Update users
             for user_data in msg["all"]["users"]:
                 self._update_or_create_user(user_data)
+
+            # Create / Update homeegrams
+            for homeegram_data in msg["all"]["homeegrams"]:
+                self._update_or_create_homeegram(homeegram_data)
 
             # Create / Update relationships
             self._update_or_create_relationships(msg["all"]["relationships"])
