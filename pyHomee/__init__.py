@@ -267,6 +267,7 @@ class Homee:
     async def _ws_send_handler(
         self, ws: websockets.asyncio.client.ClientConnection
     ) -> None:
+        """Continuously send messages from the message queue until the connection is closed."""
         try:
             msg = await self._message_queue.get()
             if self.connected and not self.should_close:
