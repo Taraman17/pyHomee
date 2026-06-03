@@ -238,6 +238,9 @@ class HomeegramConditions:
         @property
         def check_moment(self) -> int:
             """Check moment of the condition."""
+            # 1 checked at the time of triggering.
+            # 2 checked at the time of execution of the actions.
+            # 3 checked at both times.
             return int(self._data["check_moment"])
 
     class HomeegramTimeCondition(HomeegramCondition):
@@ -655,7 +658,7 @@ class HomeeGram(HomeeObject):
 
     @property
     def active(self) -> bool:
-        """Whether the homeegram is active."""
+        """Whether the homeegram is activated."""
         return bool(self._data["active"])
 
     @property
