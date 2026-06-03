@@ -27,6 +27,7 @@ from .model import (
     HomeeUser,
     HomeeWarning,
 )
+from .model_homeegram import HomeeGram
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -64,8 +65,9 @@ class Homee:
         self.relationships: list[HomeeRelationship] = []
         self.settings: HomeeSettings
         self.users: list[HomeeUser] = []
+        self.homeegrams: list[HomeeGram] = []
         self.warning = HomeeWarning(
-            {'code': 0, 'description': 'None', 'message': 'None', 'data': {}}
+            {"code": 0, "description": "None", "message": "None", "data": {}}
         )
         self.token: str = ""
         self.expires: float = 0
@@ -210,6 +212,8 @@ class Homee:
             async with websockets.asyncio.client.connect(
                 uri=f"{self.ws_url}/connection?access_token={self.token}",
                 subprotocols=[websockets.Subprotocol("v2")],
+                # homee sends a large "all" dump; avoid default limit
+                max_size=None,
             ) as ws:
                 await self._ws_on_open()
 
@@ -265,6 +269,7 @@ class Homee:
     async def _ws_send_handler(
         self, ws: websockets.asyncio.client.ClientConnection
     ) -> None:
+        """Continuously send messages from the message queue until the connection is closed."""
         try:
             msg = await self._message_queue.get()
             if self.connected and not self.should_close:
@@ -378,9 +383,14 @@ class Homee:
             for user_data in msg["all"]["users"]:
                 self._update_or_create_user(user_data)
 
-            self._update_or_create_relationships(msg["all"]["relationships"])
+            # Create / Update homeegrams
+            for homeegram_data in msg["all"]["homeegrams"]:
+                self._update_or_create_homeegram(homeegram_data)
 
+            # Create / Update relationships
+            self._update_or_create_relationships(msg["all"]["relationships"])
             self._remap_relationships()
+
             self._connected_event.set()
 
         elif msg_type == "attribute":
@@ -413,6 +423,11 @@ class Homee:
         elif msg_type == "users":
             for data in msg["users"]:
                 self._update_or_create_user(data)
+        elif msg_type == "homeegram":
+            self._update_or_create_homeegram(msg["homeegram"])
+        elif msg_type == "homeegrams":
+            for data in msg["homeegrams"]:
+                self._update_or_create_homeegram(data)
         elif msg_type == "warning":
             await self._update_warning(msg["warning"])
         else:
@@ -526,6 +541,14 @@ class Homee:
         else:
             self.devices.append(HomeeDevice(data))
 
+    def _update_or_create_homeegram(self, data: dict[str, Any]) -> None:
+        """Create a homeegram or update if already exists."""
+        homeegram = self.get_homeegram_by_id(data["id"])
+        if homeegram is not None:
+            homeegram.set_data(data)
+        else:
+            self.homeegrams.append(HomeeGram(data))
+
     async def _update_warning(self, data: dict) -> None:
         """Set the warning to the latest one received."""
         self.warning.set_data(data)
@@ -562,6 +585,18 @@ class Homee:
             (i for i, device in enumerate(self.devices) if device.id == device_id), -1
         )
         return self.devices[index] if index != -1 else None
+
+    def get_homeegram_by_id(self, homeegram_id: int) -> HomeeGram | None:
+        """Return the homeegram with the given id or 'None' if none with the given id exists."""
+        index = next(
+            (
+                i
+                for i, homeegram in enumerate(self.homeegrams)
+                if homeegram.id == homeegram_id
+            ),
+            -1,
+        )
+        return self.homeegrams[index] if index != -1 else None
 
     async def set_value(self, device_id: int, attribute_id: int, value: float) -> None:
         """Set the target value of an attribute of a device."""
