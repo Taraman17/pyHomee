@@ -255,7 +255,7 @@ class HomeeAttribute(HomeeObject):
     @property
     def name(self) -> str:
         """The decoded name of the attribute."""
-        return unquote(self._data["name"])
+        return unquote(self._data.get("name", ""))
 
     @property
     def data(self) -> str:
