@@ -423,15 +423,20 @@ class HomeeNode(HomeeObject):
         )
 
     def get_attribute_by_type(
-        self, attribute_type: int, instance: int = 0
+        self, attribute_type: int, instance: int | None = None
     ) -> HomeeAttribute | None:
         """Find and return attribute by attributeType.
 
         If multiple attributes of the same type are present,
-        the instance number can be used to select the correct one."""
+        the first one will be returned. If instance is provided,
+        the instance number is used to select the corresponding one."""
         for a in self.attributes:
-            if a.type == attribute_type and a.instance == instance:
-                return a
+            if instance is None:
+                if a.type == attribute_type:
+                    return a
+            else:
+                if a.type == attribute_type and a.instance == instance:
+                    return a
 
         return None
 
